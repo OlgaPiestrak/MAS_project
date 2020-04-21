@@ -7,10 +7,10 @@
 
 version: '2.3'
 
-
 ################################################################################
 # SERVICES
 ################################################################################
+
 services:
   # ------------------------------------------------------------
   # Bind (DNS Server)
@@ -24,33 +24,19 @@ services:
       - "1053:53/udp"
 
     environment:
-      ##
-      ## Debug?
-      ##
+      # Debug?
       - DEBUG_ENTRYPOINT=${DEBUG_COMPOSE_ENTRYPOINT}
-
-      ##
-      ## Forwarding
-      ##
+      # Forwarding
       - DNS_FORWARDER=${BIND_DNS_RESOLVER:-8.8.8.8,8.8.4.4}
-
-      ##
-      ## Security
-      ##
+      # Security
       - DNSSEC_VALIDATE=${BIND_DNSSEC_VALIDATE:-no}
-
-      ##
-      ## Time settings
-      ##
+      # Time settings
       - TTL_TIME=${BIND_TTL_TIME}
       - REFRESH_TIME=${BIND_REFRESH_TIME}
       - RETRY_TIME=${BIND_RETRY_TIME}
       - EXPIRY_TIME=${BIND_EXPIRY_TIME}
       - MAX_CACHE_TIME=${BIND_MAX_CACHE_TIME}
-
-      ##
-      ## Query log
-      ##
+      # Query log
       - DOCKER_LOGS=${BIND_LOG_DNS_QUERIES}
 
     dns:
@@ -72,46 +58,26 @@ services:
     image: devilbox/php-fpm:${PHP_SERVER}-work-0.106
     hostname: php
 
-    ##
-    ## Source all variables defined in .env
-    ## This also makes any custom variable available in PHP
-    ##
+    # Source all variables defined in .env
     env_file:
       - ./.env
 
     environment:
-      ##
-      ## Debug/Logging
-      ##
+      # Debug/Logging
       - DEBUG_ENTRYPOINT=${DEBUG_COMPOSE_ENTRYPOINT}
       - DEBUG_COMPOSE_ENTRYPOINT
       - DOCKER_LOGS
-
-      ##
-      ## UserID and GroupID
-      ##
+      # UserID and GroupID
       - NEW_UID
       - NEW_GID
-
-      ##
-      ## Adjust timezone
-      ##
+      # Adjust timezone
       - TIMEZONE
-
-      ##
-      ## Enable/Disable PHP Modules
-      ##
+      # Enable/Disable PHP Modules
       - ENABLE_MODULES=${PHP_MODULES_ENABLE}
       - DISABLE_MODULES=${PHP_MODULES_DISABLE}
-
-      ##
-      ## Mail-catching
-      ##
+      # Mail-catching
       - ENABLE_MAIL=${PHP_MAIL_CATCH_ALL:-2}
-
-      ##
-      ## Enable 127.0.0.1 Port-forwarding
-      ##
+      # Enable 127.0.0.1 Port-forwarding
       - FORWARD_PORTS_TO_LOCALHOST=80:httpd:80,443:httpd:443,6379:redis:6379
 
     dns:
@@ -160,37 +126,23 @@ services:
     hostname: httpd
 
     environment:
-      ##
-      ## Debug/Logging
-      ##
+      # Debug/Logging
       - DEBUG_ENTRYPOINT=${DEBUG_COMPOSE_ENTRYPOINT}
       - DEBUG_RUNTIME=${DEBUG_COMPOSE_ENTRYPOINT}
       - DOCKER_LOGS
-
-      ##
-      ## Adjust timezone
-      ##
+      # Adjust timezone
       - TIMEZONE
-
-      ##
-      ## UserID and GroupID
-      ##
+      # UserID and GroupID
       - NEW_UID
       - NEW_GID
-
-      ##
-      ## Default vhost
-      ##
+      # Default vhost
       - MAIN_VHOST_ENABLE=1
       - MAIN_VHOST_STATUS_ENABLE=1
       - MAIN_VHOST_STATUS_ALIAS=/devilbox-httpd-status
       - MAIN_VHOST_SSL_TYPE=${HTTPD_VHOST_SSL_TYPE:-both}
       - MAIN_VHOST_SSL_GEN=1
       - MAIN_VHOST_SSL_CN=${DEVILBOX_SSL_CN:-localhost}
-
-      ##
-      ## PHP-FPM Remote Server
-      ##
+      # PHP-FPM Remote Server
       - COMPAT=${PHP_SERVER}
       - PHP_FPM_ENABLE=1
       - PHP_FPM_SERVER_ADDR=172.16.238.10
@@ -316,6 +268,7 @@ services:
 ################################################################################
 # NETWORK
 ################################################################################
+
 networks:
   app_net:
     driver: bridge
@@ -330,6 +283,7 @@ networks:
 ################################################################################
 # VOLUMES
 ################################################################################
+
 volumes:
   # ------------------------------------------------------------
   # Misc
