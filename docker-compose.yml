@@ -218,10 +218,32 @@ services:
       - redis
 
   # ------------------------------------------------------------
+  # People Detection service
+  # ------------------------------------------------------------
+  people_detection:
+    image: face_recognition
+    build:
+      context: .
+      dockerfile: Dockerfile.facerecognition
+    hostname: people_detection
+    
+    working_dir: /people_detection
+    command: python2 qi_person_detection.py --server 172.16.238.12 --no-ssl
+    volumes:
+      - ../processing/video_peopledetection:/people_detection
+    
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.14
+
+    depends_on:
+      - redis
+
+  # ------------------------------------------------------------
   # Dialogflow service
   # ------------------------------------------------------------
   dialogflow:
-    image: dialogflow
+    image: java8
     build:
       context: .
       dockerfile: Dockerfile.java8
@@ -234,7 +256,7 @@ services:
     
     networks:
       app_net:
-        ipv4_address: 172.16.238.14
+        ipv4_address: 172.16.238.15
 
     depends_on:
       - redis
@@ -243,7 +265,7 @@ services:
   # Web Server service
   # ------------------------------------------------------------
   webserver:
-    image: webserver
+    image: java8
     build:
       context: .
       dockerfile: Dockerfile.java8
@@ -260,7 +282,7 @@ services:
     
     networks:
       app_net:
-        ipv4_address: 172.16.238.15
+        ipv4_address: 172.16.238.16
 
     depends_on:
       - redis
