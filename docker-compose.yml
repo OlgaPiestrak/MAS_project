@@ -20,9 +20,8 @@ services:
     hostname: bind
     restart: always
     ports:
-      # [local-machine:]local-port:docker-port
-      - "${LOCAL_LISTEN_ADDR}${HOST_PORT_BIND:-1053}:53/tcp"
-      - "${LOCAL_LISTEN_ADDR}${HOST_PORT_BIND:-1053}:53/udp"
+      - "1053:53/tcp"
+      - "1053:53/udp"
 
     environment:
       ##
@@ -65,7 +64,7 @@ services:
     networks:
       app_net:
         ipv4_address: 172.16.238.100
-  
+
   # ------------------------------------------------------------
   # PHP
   # ------------------------------------------------------------
@@ -74,10 +73,8 @@ services:
     hostname: php
 
     ##
-    ## All .env variables
-    ##
     ## Source all variables defined in .env
-    ## This also makes any custom variable available in each PHP/HHVM container
+    ## This also makes any custom variable available in PHP
     ##
     env_file:
       - ./.env
@@ -130,40 +127,28 @@ services:
         ipv4_address: 172.16.238.10
 
     volumes:
-      # ---- Format: ----
-      # HOST-DIRECTORY : DOCKER-DIRECTORY
-
       # Mount custom intranet
-      - ${DEVILBOX_PATH}/data/www:/var/www/default:rw${MOUNT_OPTIONS}
-
+      - ./data/www:/var/www/default:rw${MOUNT_OPTIONS}
       # Mount logs
-      - ${DEVILBOX_PATH}/log/php-fpm-${PHP_SERVER}:/var/log/php:rw${MOUNT_OPTIONS}
-
+      - ./log/php-fpm-${PHP_SERVER}:/var/log/php:rw${MOUNT_OPTIONS}
       # Mount Mail directory
       - devilbox-mail:/var/mail:rw${MOUNT_OPTIONS}
-
-      # Mount devilbox user-defined *.ini files in order
+      # Mount user-defined *.ini files in order
       # to overwrite the default PHP.ini configuration
-      - ${DEVILBOX_PATH}/cfg/php-ini-${PHP_SERVER}:/etc/php-custom.d:ro${MOUNT_OPTIONS}
-
-      # Mount devilbox user-defined PHP-FPM *.conf files in order
+      - ./cfg/php-ini-${PHP_SERVER}:/etc/php-custom.d:ro${MOUNT_OPTIONS}
+      # Mount user-defined PHP-FPM *.conf files in order
       # to overwrite the default PHP-FPM configuration
-      - ${DEVILBOX_PATH}/cfg/php-fpm-${PHP_SERVER}:/etc/php-fpm-custom.d:ro${MOUNT_OPTIONS}
-
-      # Mount devilbox user-defined *.so files in order
+      - ./cfg/php-fpm-${PHP_SERVER}:/etc/php-fpm-custom.d:ro${MOUNT_OPTIONS}
+      # Mount user-defined *.so files in order
       # to load custom PHP modules
-      - ${DEVILBOX_PATH}/mod/php-fpm-${PHP_SERVER}:/usr/lib64/php/custom-modules:ro${MOUNT_OPTIONS}
-
-      # Mount devilbox user-defined PHP-FPM startup *.sh scripts
-      - ${DEVILBOX_PATH}/cfg/php-startup-${PHP_SERVER}:/startup.1.d:rw${MOUNT_OPTIONS}
-      - ${DEVILBOX_PATH}/autostart:/startup.2.d:rw${MOUNT_OPTIONS}
-
-      # Mount devilbox user-defined bash config
-      - ${DEVILBOX_PATH}/bash:/etc/bashrc-devilbox.d:rw${MOUNT_OPTIONS}
-
+      - ./mod/php-fpm-${PHP_SERVER}:/usr/lib64/php/custom-modules:ro${MOUNT_OPTIONS}
+      # Mount user-defined PHP-FPM startup *.sh scripts
+      - ./cfg/php-startup-${PHP_SERVER}:/startup.1.d:rw${MOUNT_OPTIONS}
+      - ./autostart:/startup.2.d:rw${MOUNT_OPTIONS}
+      # Mount user-defined bash config
+      - ./bash:/etc/bashrc-devilbox.d:rw${MOUNT_OPTIONS}
       # Certificate Authority public key
-      - ${DEVILBOX_PATH}/ca:/ca:rw${MOUNT_OPTIONS}
-
+      - ./ca:/ca:rw${MOUNT_OPTIONS}
       # Users SSH directory (read-only)
       - ${HOST_PATH_SSH_DIR}:/home/devilbox/.ssh:ro${MOUNT_OPTIONS}
 
@@ -173,7 +158,7 @@ services:
   httpd:
     image: devilbox/${HTTPD_SERVER}:0.32
     hostname: httpd
-    
+
     environment:
       ##
       ## Debug/Logging
@@ -213,33 +198,24 @@ services:
       - PHP_FPM_TIMEOUT=${HTTPD_TIMEOUT_TO_PHP_FPM:-180}
 
     ports:
-      # ---- Format: ----
-      # [HOST-ADDR : ] HOST-PORT : DOCKER-PORT
-      - "${LOCAL_LISTEN_ADDR}${HOST_PORT_HTTPD}:80"
-      - "${LOCAL_LISTEN_ADDR}${HOST_PORT_HTTPD_SSL}:443"
+      - "80:80"
+      - "443:443"
 
     networks:
       app_net:
         ipv4_address: 172.16.238.11
 
     volumes:
-      # ---- Format: ----
-      # HOST-DIRECTORY : DOCKER-DIRECTORY
-
       # Mount custom intranet
-      - ${DEVILBOX_PATH}/data/www:/var/www/default:rw${MOUNT_OPTIONS}
-
+      - ./data/www:/var/www/default:rw${MOUNT_OPTIONS}
       # Mount custom web server config directory
-      - ${DEVILBOX_PATH}/cfg/${HTTPD_SERVER}:/etc/httpd-custom.d:rw${MOUNT_OPTIONS}
-
+      - ./cfg/${HTTPD_SERVER}:/etc/httpd-custom.d:rw${MOUNT_OPTIONS}
       # Mount custom vhost-templates
-      - ${DEVILBOX_PATH}/cfg/vhost-gen:/etc/vhost-gen.d:rw${MOUNT_OPTIONS}
-
+      - ./cfg/vhost-gen:/etc/vhost-gen.d:rw${MOUNT_OPTIONS}
       # Mount logs
-      - ${DEVILBOX_PATH}/log/${HTTPD_SERVER}:/var/log/${HTTPD_SERVER}:rw${MOUNT_OPTIONS}
-
+      - ./log/${HTTPD_SERVER}:/var/log/${HTTPD_SERVER}:rw${MOUNT_OPTIONS}
       # Certificate Authority public key
-      - ${DEVILBOX_PATH}/ca:/ca:rw${MOUNT_OPTIONS}
+      - ./ca:/ca:rw${MOUNT_OPTIONS}
 
     depends_on:
       - php
@@ -257,16 +233,85 @@ services:
       - REDIS_ARGS=${REDIS_ARGS:- }
 
     ports:
-      # [local-machine:]local-port:docker-port
-      - "${LOCAL_LISTEN_ADDR}${HOST_PORT_REDIS}:6379"
+      - "6379:6379"
 
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.12
+
+    depends_on:
+      - php
+      - httpd
+
+  # ------------------------------------------------------------
+  # Face Recognition service
+  # ------------------------------------------------------------
+  face_recognition:
+    image: face_recognition
+    build:
+      context: .
+      dockerfile: Dockerfile.facerecognition
+    hostname: face_recognition
+    
+    working_dir: /face_recognition
+    command: python2 qi_face_recognition.py --server 172.16.238.12 --no-ssl
+    volumes:
+      - ../processing/video_facerecognition:/face_recognition
+    
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.13
+
+    depends_on:
+      - redis
+
+  # ------------------------------------------------------------
+  # Dialogflow service
+  # ------------------------------------------------------------
+  dialogflow:
+    image: dialogflow
+    build:
+      context: .
+      dockerfile: Dockerfile.java8
+    hostname: dialogflow
+    
+    working_dir: /dialogflow
+    command: java -XX:+UseG1GC -jar audio-dialogflow.jar 172.16.238.12 nossl
+    volumes:
+      - ../processing/audio_dialogflow:/dialogflow
+    
     networks:
       app_net:
         ipv4_address: 172.16.238.14
 
     depends_on:
-      - php
-      - httpd
+      - redis
+
+  # ------------------------------------------------------------
+  # Web Server service
+  # ------------------------------------------------------------
+  webserver:
+    image: webserver
+    build:
+      context: .
+      dockerfile: Dockerfile.java8
+    hostname: webserver
+    
+    working_dir: /webserver
+    command: java -XX:+UseG1GC -jar webserver.jar 172.16.238.12 nossl
+    volumes:
+      - ../processing/webserver:/webserver
+
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.15
+
+    depends_on:
+      - redis
 
 ################################################################################
 # NETWORK
