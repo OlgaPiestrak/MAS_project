@@ -1,0 +1,29 @@
+<script type="text/javascript">
+$(function () {
+    $('#settingsForm').on('submit', function() {
+        $.post('settings', $(this).serialize(),
+                function(response){$('#popupContent').html('<pre>'+response+'</pre>');$('#popup').modal();});
+        return false;
+    });
+    $('#robotLogs').on('click', function() {
+        $.get('robot_logs', {}, function(response){$('#popupContent').html('<pre>'+response+'</pre>');$('#popup').modal();});
+        return false;
+    });
+});
+</script>
+
+<h3>Robot Configuration</h3>
+<form id="settingsForm" class="mt-4">
+  <div class="form-group">
+    <label for="robotIp">Robot IP address:</label>
+    <input type="text" class="form-control" name="robotIp" aria-describedby="robotIpHelp" value="<?= $_SESSION['robotIp'] ?? '' ?>">
+    <small id="robotIpHelp" class="form-text text-muted">Enter the LAN IP-address of the Nao/Pepper (if used)</small>
+  </div>
+  <div class="form-group">
+    <label for="robotPass">Robot password:</label>
+    <input type="text" class="form-control" name="robotPass" aria-describedby="robotPassHelp" value="<?= $_SESSION['robotPass'] ?? '' ?>">
+    <small id="robotPassHelp" class="form-text text-muted">Enter the password for the Nao/Pepper (if used)</small>
+  </div>
+  <button type="submit" class="btn btn-primary">Submit</button>
+  <a href="#" id="robotLogs" style="float:right">Logs</a>
+</form>

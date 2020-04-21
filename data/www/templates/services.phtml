@@ -1,0 +1,54 @@
+<script type="text/javascript">
+$(function () {
+    $('.serviceStart').on('click', function() {
+        $.post('service_start', {service: $(this).parent().parent().attr('id')}, function(response){window.location.reload(true)});
+        return false;
+    });
+    $('.serviceStop').on('click', function() {
+        $.post('service_stop', {service: $(this).parent().parent().attr('id')}, function(response){window.location.reload(true)});
+        return false;
+    });
+    $('.serviceLog').on('click', function() {
+        $.get('service_log', {service: $(this).parent().parent().attr('id')},
+                function(response){$('#popupContent').html('<pre>'+response+'</pre>');$('#popup').modal();});
+        return false;
+    });
+    $('#clearLogs').on('click', function() {
+        $.get('clear_logs', {}, function(response){if(response) alert(response);});
+        return false;
+    });
+});
+</script>
+
+<table class="table table-hover mt-1 mb-0">
+	<thead>
+		<tr>
+			<th>Service</th>
+			<th>Status</th>
+			<th>Actions</th>
+		</tr>
+	</thead>
+	<tbody>
+<?php
+$base = 'https://bitbucket.org/socialroboticshub/processing/src/master/';
+$services = [
+    'audio_dialogflow' => '<a href="' . $base . 'audio_dialogflow" target="_blank">DialogFlow</a>',
+    // 'audio_google' => '<a href="'.$base.'audio_google" target="_blank">Google TTS</a>',
+    'video_facerecognition' => '<a href="' . $base . 'video_facerecognition" target="_blank">Face Recognition</a>',
+    'video_peopledetection' => '<a href="' . $base . 'video_peopledetection" target="_blank">People Detection</a>',
+    'video_emotion' => '<a href="' . $base . 'video_emotion" target="_blank">Emotion Detection</a>',
+    'stream_video' => '<a href="https://bitbucket.org/socialroboticshub/output/src/master/stream_video">Video Streaming</a>',
+    // 'websearch' => '<a href="'.$base.'websearch" target="_blank">Web Search</a>',
+    'webserver' => '<a href="' . $base . 'webserver" target="_blank">Web Server</a>'
+];
+$start = '<a href="#" class="serviceStart">Start</a>';
+$stop  = '<a href="#" class="serviceStop">Stop</a>';
+$log   = '<a href="#" class="serviceLog">Log</a>';
+foreach ($services as $service => $label) {
+    $status = exec("systemctl show -p SubState $service | cut -d'=' -f2");
+    echo "<tr id=\"$service\"><td>$label</td><td>$status</td><td>$start $stop ($log)</td></tr>";
+}
+?>
+	</tbody>
+</table>
+<a href="#" id="clearLogs" style="float:right">(Clear)</a>
