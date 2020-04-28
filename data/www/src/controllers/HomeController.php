@@ -70,42 +70,6 @@ sshpass -p $robotPass scp $o -p \"\${files[@]}\" nao@$robotIp:/home/nao/cbsr/ &&
             echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/start.sh && echo \"OK (4/4)\"");
         }
     }
-
-    public function serviceStart(Request $request, Response $response, $args)
-    {
-        $service = $request->getParams()['service'] ?? '';
-        if (empty($service)) {
-            return $response->withStatus(400, 'No service given to start.');
-        } else {
-            echo self::exec("sudo systemctl restart $service");
-        }
-    }
-
-    public function serviceStop(Request $request, Response $response, $args)
-    {
-        $service = $request->getParams()['service'] ?? '';
-        if (empty($service)) {
-            return $response->withStatus(400, 'No service given to start.');
-        } else {
-            echo self::exec("sudo systemctl stop $service");
-        }
-    }
-
-    public function serviceLog(Request $request, Response $response, $args)
-    {
-        $service = $request->getParams()['service'] ?? '';
-        if (empty($service)) {
-            return $response->withStatus(400, 'No service given to get the log of.');
-        } else {
-            echo self::exec("sudo journalctl -u $service --boot --no-pager --all");
-        }
-    }
-    
-    public function clearLogs(Request $request, Response $response, $args)
-    {
-        echo self::exec('sudo find /run/log/journal -name "*.journal" | xargs sudo rm');
-        echo self::exec('sudo systemctl restart systemd-journald');
-    }
     
     public function robotLogs(Request $request, Response $response, $args)
     {
