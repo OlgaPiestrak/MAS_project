@@ -24,17 +24,21 @@ class HomeController
     public function settings(Request $request, Response $response, $args)
     {
         $params = $request->getParams();
+        $myIp = $params['myIp'] ?? '';
         $robotIp = $params['robotIp'] ?? '';
         $robotPass = $params['robotPass'] ?? '';
 
         // LAN IP-address of user's device (required)
-        $IPs = explode(' ', self::exec('sudo hostname --all-ip-addresses'));
-        $myIp = $IPs[1];
-        echo "Creating configuration files for $myIp...\n";
-        echo self::exec('sudo cp -f /opt/processing/webserver/html/socket.js.template /opt/processing/webserver/html/socket.js && echo "OK (1/4)"');
-        echo self::exec("sudo sed -i \"s/127.0.0.1/$myIp/\" /opt/processing/webserver/html/socket.js && echo \"OK (2/4)\"");
-        echo self::exec('sudo cp -f /var/puppet-cbsr/files/start.sh.template /var/puppet-cbsr/files/start.sh && echo "OK (3/4)"');
-        echo self::exec("sudo sed -i \"s/unknown/$myIp/\" /var/puppet-cbsr/files/start.sh && echo \"OK (4/4)\"");
+        if (filter_var($myIp, FILTER_VALIDATE_IP)) {
+            $_SESSION['myIp'] = $myIp;
+            echo "Creating configuration files using the given machine IP...\n";
+            echo self::exec('cp -f /opt/processing/webserver/html/socket.js.template /opt/processing/webserver/html/socket.js && echo "OK (1/4)"');
+            echo self::exec("sed -i \"s/127.0.0.1/$myIp/\" /opt/processing/webserver/html/socket.js && echo \"OK (2/4)\"");
+            echo self::exec('cp -f /opt/input/robot_scripts/start.sh.template /opt/input/robot_scripts/start.sh && echo "OK (3/4)"');
+            echo self::exec("sed -i \"s/unknown/$myIp/\" /opt/input/robot_scripts/start.sh && echo \"OK (4/4)\"");
+        } else {
+            return $response->withStatus(422, 'The IP-address for your device is empty or invalid.');
+        }
 
         // LAN IP-address of the Nao/Pepper (if used)
         if (empty($robotIp) || filter_var($robotIp, FILTER_VALIDATE_IP)) {
@@ -50,20 +54,20 @@ class HomeController
         if (! empty($robotIp) && ! empty($robotPass)) {
             $o = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR';
             echo "Copying files to the robot using the given IP and password...\n";
-            echo self::exec("sudo sshpass -p $robotPass ssh $o nao@$robotIp \"mkdir -p /home/nao/cbsr\" && echo \"OK (1/4)\"");
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp \"mkdir -p /home/nao/cbsr\" && echo \"OK (1/4)\"");
             echo self::exec("files=();
 files+=(\"$(find /opt/input -name \"cert.pem\")\");
+files+=(\"$(find /opt/input/robot_scripts -name \"start.sh\")\");
+files+=(\"$(find /opt/input/robot_scripts -name \"stop.sh\")\");
 files+=(\"$(find /opt/input/robot_microphone -name \"robot_sound_processing.py\")\");
 files+=(\"$(find /opt/input/robot_camera -name \"visual_producer.py\")\");
 files+=(\"$(find /opt/input/robot_touch -name \"event_producer.py\")\");
 files+=(\"$(find /opt/output/robot_actions -name \"action_consumer.py\")\");
 files+=(\"$(find /opt/output/robot_tablet -name \"tablet.py\")\");
 files+=(\"$(find /opt/output/robot_tablet -name \"tablet_consumer.py\")\");
-files+=(\"$(find /var/puppet-cbsr/files -name \"start.sh\")\");
-files+=(\"$(find /var/puppet-cbsr/files -name \"stop.sh\")\");
-sudo sshpass -p $robotPass scp $o -p \"\${files[@]}\" nao@$robotIp:/home/nao/cbsr/ && echo \"OK (2/4)\"");
-            echo self::exec("sudo sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/stop.sh && echo \"OK (3/4)\"");
-            echo self::exec("sudo sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/start.sh && echo \"OK (4/4)\"");
+sshpass -p $robotPass scp $o -p \"\${files[@]}\" nao@$robotIp:/home/nao/cbsr/ && echo \"OK (2/4)\"");
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/stop.sh && echo \"OK (3/4)\"");
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/start.sh && echo \"OK (4/4)\"");
         }
     }
 
@@ -113,15 +117,15 @@ sudo sshpass -p $robotPass scp $o -p \"\${files[@]}\" nao@$robotIp:/home/nao/cbs
             $o = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR';
             
             echo '<b>action_consumer</b><br>';
-            echo self::exec("sudo sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/action_consumer.log");
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/action_consumer.log");
             echo '<br><b>event_producer</b><br>';
-            echo self::exec("sudo sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/event_producer.log");
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/event_producer.log");
             echo '<br><b>robot_sound_processing</b><br>';
-            echo self::exec("sudo sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/robot_sound_processing.log");
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/robot_sound_processing.log");
             echo '<br><b>tablet_consumer</b><br>';
-            echo self::exec("sudo sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/tablet_consumer.log");
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/tablet_consumer.log");
             echo '<br><b>visual_producer</b><br>';
-            echo self::exec("sudo sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/visual_producer.log");
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/visual_producer.log");
         }
     }    
 

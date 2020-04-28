@@ -12,8 +12,12 @@ $(function () {
 });
 </script>
 
-<h3>Robot Configuration</h3>
-<form id="settingsForm" class="mt-4">
+<form id="settingsForm" class="mt-2">
+  <div class="form-group">
+    <label for="myIp">My IP address:</label>
+    <input type="text" class="form-control" name="myIp" aria-describedby="myIpHelp" value="<?= $_SESSION['myIp'] ?? '' ?>">
+    <small id="myIpHelp" class="form-text text-muted">Please enter the LAN IP-address of your device.</small>
+  </div>
   <div class="form-group">
     <label for="robotIp">Robot IP address:</label>
     <input type="text" class="form-control" name="robotIp" aria-describedby="robotIpHelp" value="<?= $_SESSION['robotIp'] ?? '' ?>">
