@@ -5,6 +5,9 @@
 # Ignore logs
 /log/[a-z0-9-]*
 
+# Ignore mails
+/mail/devilbox
+
 # Ignore Certificate Authority
 /ca/*
 

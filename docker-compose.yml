@@ -98,7 +98,7 @@ services:
       # Mount logs
       - ./log/php-fpm-${PHP_SERVER}:/var/log/php:rw${MOUNT_OPTIONS}
       # Mount Mail directory
-      - devilbox-mail:/var/mail:rw${MOUNT_OPTIONS}
+      - ./mail:/var/mail:rw${MOUNT_OPTIONS}
       # Mount user-defined *.ini files in order
       # to overwrite the default PHP.ini configuration
       - ./cfg/php-ini-${PHP_SERVER}:/etc/php-custom.d:ro${MOUNT_OPTIONS}
@@ -117,6 +117,15 @@ services:
       - ./ca:/ca:rw${MOUNT_OPTIONS}
       # Users SSH directory (read-only)
       - ${HOST_PATH_SSH_DIR}:/home/devilbox/.ssh:ro${MOUNT_OPTIONS}
+      # CBSR Input
+      - ../input:/opt/input:rw${MOUNT_OPTIONS}
+      # CBSR Processing
+      - ../processing:/opt/processing:rw${MOUNT_OPTIONS}
+      # CBSR Output
+      - ../output:/opt/output:rw${MOUNT_OPTIONS}
+
+    depends_on:
+      - bind
 
   # ------------------------------------------------------------
   # Web Server
@@ -170,6 +179,7 @@ services:
       - ./ca:/ca:rw${MOUNT_OPTIONS}
 
     depends_on:
+      - bind
       - php
 
   # ------------------------------------------------------------
@@ -208,7 +218,7 @@ services:
     working_dir: /face_recognition
     command: python2 qi_face_recognition.py --server 172.16.238.12 --no-ssl
     volumes:
-      - ../processing/video_facerecognition:/face_recognition
+      - ../processing/video_facerecognition:/face_recognition:ro${MOUNT_OPTIONS}
     
     networks:
       app_net:
@@ -230,7 +240,7 @@ services:
     working_dir: /people_detection
     command: python2 qi_person_detection.py --server 172.16.238.12 --no-ssl
     volumes:
-      - ../processing/video_peopledetection:/people_detection
+      - ../processing/video_peopledetection:/people_detection:ro${MOUNT_OPTIONS}
     
     networks:
       app_net:
@@ -252,7 +262,7 @@ services:
     working_dir: /dialogflow
     command: java -XX:+UseG1GC -jar audio-dialogflow.jar 172.16.238.12 nossl
     volumes:
-      - ../processing/audio_dialogflow:/dialogflow
+      - ../processing/audio_dialogflow:/dialogflow:ro${MOUNT_OPTIONS}
     
     networks:
       app_net:
@@ -274,7 +284,7 @@ services:
     working_dir: /webserver
     command: java -XX:+UseG1GC -jar webserver.jar 172.16.238.12 nossl
     volumes:
-      - ../processing/webserver:/webserver
+      - ../processing/webserver:/webserver:ro${MOUNT_OPTIONS}
 
     ports:
       - "8000:8000"
@@ -301,13 +311,3 @@ networks:
       config:
         - subnet: 172.16.238.0/24
           gateway: 172.16.238.1
-
-################################################################################
-# VOLUMES
-################################################################################
-
-volumes:
-  # ------------------------------------------------------------
-  # Misc
-  # ------------------------------------------------------------
-  devilbox-mail:
