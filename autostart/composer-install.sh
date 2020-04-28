@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+apt-get -y update
 apt-get install -y --fix-missing sshpass
 
 cd /var/www/default
