@@ -55,17 +55,18 @@ class HomeController
             $o = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR';
             echo "Copying files to the robot using the given IP and password...\n";
             echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp \"mkdir -p /home/nao/cbsr\" && echo \"OK (1/4)\"");
-            echo self::exec("files=();
-files+=(\"$(find /opt/input -name \"cert.pem\")\");
-files+=(\"$(find /opt/input/robot_scripts -name \"start.sh\")\");
-files+=(\"$(find /opt/input/robot_scripts -name \"stop.sh\")\");
-files+=(\"$(find /opt/input/robot_microphone -name \"robot_sound_processing.py\")\");
-files+=(\"$(find /opt/input/robot_camera -name \"visual_producer.py\")\");
-files+=(\"$(find /opt/input/robot_touch -name \"event_producer.py\")\");
-files+=(\"$(find /opt/output/robot_actions -name \"action_consumer.py\")\");
-files+=(\"$(find /opt/output/robot_tablet -name \"tablet.py\")\");
-files+=(\"$(find /opt/output/robot_tablet -name \"tablet_consumer.py\")\");
-sshpass -p $robotPass scp $o -p \"\${files[@]}\" nao@$robotIp:/home/nao/cbsr/ && echo \"OK (2/4)\"");
+            $input  = '/opt/input/';
+            $output = '/opt/output/';
+            $files  = [
+                $input.'cert.pem', $input.'robot_scripts/start.sh', $input.'robot_scripts/stop.sh',
+                $input.'robot_microphone/robot_sound_processing.py', $input.'robot_camera/visual_producer.py',
+                $output.'robot_actions/action_consumer.py', $output.'robot_tablet/tablet.py', $output.'robot_tablet/tablet_consumer.py'
+            ];
+            $scp = '';
+            foreach($files as $file) {
+                $scp .= "sshpass -p $robotPass scp $o -p $file nao@$robotIp:/home/nao/cbsr/ &&";
+            }
+            echo self::exec($scp.'echo "OK (2/4)"');
             echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/stop.sh && echo \"OK (3/4)\"");
             echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/start.sh && echo \"OK (4/4)\"");
         }
