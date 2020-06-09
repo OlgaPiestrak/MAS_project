@@ -201,6 +201,9 @@ services:
       app_net:
         ipv4_address: 172.16.238.12
 
+    volumes:
+      - ./cfg/redis-${REDIS_SERVER}:/usr/local/etc/redis:rw${MOUNT_OPTIONS}
+
     depends_on:
       - php
       - httpd
@@ -216,7 +219,7 @@ services:
     hostname: face_recognition
     
     working_dir: /face_recognition
-    command: python2 qi_face_recognition.py --server 172.16.238.12 --no-ssl
+    command: python2 qi_face_recognition.py --server 172.16.238.12
     volumes:
       - ../processing/video_facerecognition:/face_recognition:ro${MOUNT_OPTIONS}
     
@@ -238,7 +241,7 @@ services:
     hostname: people_detection
     
     working_dir: /people_detection
-    command: python2 qi_person_detection.py --server 172.16.238.12 --no-ssl
+    command: python2 qi_person_detection.py --server 172.16.238.12
     volumes:
       - ../processing/video_peopledetection:/people_detection:ro${MOUNT_OPTIONS}
     
@@ -260,7 +263,7 @@ services:
     hostname: dialogflow
     
     working_dir: /dialogflow
-    command: java -XX:+UseG1GC -jar audio-dialogflow.jar 172.16.238.12 nossl
+    command: java -XX:+UseG1GC -jar audio-dialogflow.jar 172.16.238.12
     volumes:
       - ../processing/audio_dialogflow:/dialogflow:ro${MOUNT_OPTIONS}
     
@@ -282,7 +285,7 @@ services:
     hostname: webserver
     
     working_dir: /webserver
-    command: java -XX:+UseG1GC -jar webserver.jar 172.16.238.12 nossl
+    command: java -XX:+UseG1GC -jar webserver.jar 172.16.238.12
     volumes:
       - ../processing/webserver:/webserver:ro${MOUNT_OPTIONS}
 
