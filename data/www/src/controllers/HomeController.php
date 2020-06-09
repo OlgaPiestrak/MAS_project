@@ -80,17 +80,11 @@ class HomeController
             return $response->withStatus(400, 'No robot IP and/or password set.');
         } else {
             $o = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR';
-            
-            echo '<b>action_consumer</b><br>';
-            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/action_consumer.log");
-            echo '<br><b>event_producer</b><br>';
-            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/event_producer.log");
-            echo '<br><b>robot_sound_processing</b><br>';
-            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/robot_sound_processing.log");
-            echo '<br><b>tablet_consumer</b><br>';
-            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/tablet_consumer.log");
-            echo '<br><b>visual_producer</b><br>';
-            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/visual_producer.log");
+            $logs = ['action_consumer', 'event_producer', 'robot_sound_processing', 'tablet_consumer', 'visual_producer'];
+            foreach ($logs as $log) {
+                echo "<br><b>$log</b><br>";
+                echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/$log.log");
+            }
         }
     }    
 
@@ -107,25 +101,8 @@ class HomeController
      */
     private static function exec($cmd, $timeout = 60)
     {
-        // File descriptors passed to the process.
-        $descriptors = array(
-            0 => array(
-                'pipe',
-                'r'
-            ), // stdin
-            1 => array(
-                'pipe',
-                'w'
-            ), // stdout
-            2 => array(
-                'pipe',
-                'w'
-            ) // stderr
-        );
-
-        // Start the process.
+        $descriptors = [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']];
         $process = proc_open($cmd, $descriptors, $pipes);
-
         if (! is_resource($process)) {
             throw new \Exception('Could not execute process');
         }
@@ -133,22 +110,18 @@ class HomeController
         // Set the stdout and stderr streams to non-blocking.
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
-
         // Turn the timeout into microseconds.
         $timeout = $timeout * 1000000;
 
         // Output buffer.
         $buffer = '';
-
         // While we have time to wait.
         while ($timeout > 0) {
             $start = microtime(true);
 
             // Wait until we have output or the timer expired.
-            $read = array(
-                $pipes[1]
-            );
-            $other = array();
+            $read = [$pipes[1]];
+            $other = [];
             stream_select($read, $other, $other, 0, $timeout);
 
             // Get the status of the process.
