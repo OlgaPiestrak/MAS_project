@@ -58,7 +58,7 @@ class HomeController
             $input  = '/opt/input/';
             $output = '/opt/output/';
             $files  = [
-                $input.'cert.pem', $input.'robot_scripts/start.sh', $input.'robot_scripts/stop.sh',
+                $input.'cert.pem', $input.'robot_scripts/start.sh', $input.'robot_scripts/stop.sh',$input.'robot_touch/event_producer.py'
                 $input.'robot_microphone/robot_sound_processing.py', $input.'robot_camera/visual_producer.py',
                 $output.'robot_actions/action_consumer.py', $output.'robot_tablet/tablet.py', $output.'robot_tablet/tablet_consumer.py'
             ];
