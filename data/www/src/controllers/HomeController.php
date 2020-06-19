@@ -36,7 +36,7 @@ class HomeController
             echo self::exec("sed -i \"s/127.0.0.1/$myIp/\" /opt/processing/webserver/html/socket.js && echo \"OK (2/4)\"");
             echo self::exec('cp -f /opt/input/robot_scripts/start.sh.template /opt/input/robot_scripts/start.sh && echo "OK (3/4)"');
             echo self::exec("sed -i \"s/unknown/$myIp/\" /opt/input/robot_scripts/start.sh && echo \"OK (4/4)\"");
-            echo self::exec("chmod +x /opt/input/robot_scripts/*.sh");
+            self::exec('chmod +x /opt/input/robot_scripts/*.sh');
         } else {
             return $response->withStatus(422, 'The IP-address for your device is empty or invalid.');
         }
