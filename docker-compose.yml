@@ -221,7 +221,7 @@ services:
     working_dir: /face_recognition
     command: python2 qi_face_recognition.py --server 172.16.238.12
     volumes:
-      - ../processing/video_facerecognition:/face_recognition:ro${MOUNT_OPTIONS}
+      - ../processing/video_facerecognition:/face_recognition:rw${MOUNT_OPTIONS}
     
     networks:
       app_net:
