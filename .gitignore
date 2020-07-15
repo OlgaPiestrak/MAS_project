@@ -8,6 +8,9 @@
 # Ignore mails
 /mail/devilbox
 
+# Ignore Redis DB
+*.rdb
+
 # Ignore Certificate Authority
 /ca/*
 
