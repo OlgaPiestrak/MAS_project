@@ -21,25 +21,52 @@ class HomeController
         return $this->container->get('renderer')->render($response, 'index.phtml', $args);
     }
 
+    public function signup(Request $request, Response $response, $args)
+    {
+        $params = $request->getParams();
+        $username = $params['newUser'] ?? '';
+        if (! ctype_alnum($username)) {
+            return $response->withStatus(422, 'Please use only alphanumeric characters in the username.');
+        }
+        if (strlen($username) < 4) {
+            return $response->withStatus(422, 'Please use at least 4 characters in the username.');
+        }
+        $password = $params['newPass'] ?? '';
+        if (strlen($password) < 8) {
+            return $response->withStatus(422, 'Please use at least 8 characters in the password.');
+        }
+
+        $dir = __DIR__;
+        echo self::exec("python2 -u $dir/register_user.py --username $username --password $password");
+    }
+
     public function settings(Request $request, Response $response, $args)
     {
         $params = $request->getParams();
         $myIp = $params['myIp'] ?? '';
+        $myUser = $params['myUser'] ?? '';
+        $myPass = $params['myPass'] ?? '';
         $robotIp = $params['robotIp'] ?? '';
         $robotPass = $params['robotPass'] ?? '';
 
         // LAN IP-address of user's device (required)
-        if (filter_var($myIp, FILTER_VALIDATE_IP)) {
-            $_SESSION['myIp'] = $myIp;
-            echo "Creating configuration files using the given machine IP...\n";
-            echo self::exec('cp -f /opt/processing/webserver/html/socket.js.template /opt/processing/webserver/html/socket.js && echo "OK (1/4)"');
-            echo self::exec("sed -i \"s/127.0.0.1/$myIp/\" /opt/processing/webserver/html/socket.js && echo \"OK (2/4)\"");
-            echo self::exec('cp -f /opt/input/robot_scripts/start.sh.template /opt/input/robot_scripts/start.sh && echo "OK (3/4)"');
-            echo self::exec("sed -i \"s/unknown/$myIp/\" /opt/input/robot_scripts/start.sh && echo \"OK (4/4)\"");
-            self::exec('chmod +x /opt/input/robot_scripts/*.sh');
-        } else {
-            return $response->withStatus(422, 'The IP-address for your device is empty or invalid.');
+        if (! filter_var($myIp, FILTER_VALIDATE_IP)) {
+            return $response->withStatus(422, 'The IP-address for the robot is invalid.');
         }
+        $_SESSION['myIp'] = $myIp;
+        if (empty($myUser)) {
+            return $response->withStatus(422, 'Please give your username.');
+        }
+        $_SESSION['myUser'] = $myUser;
+        if (empty($myPass)) {
+            return $response->withStatus(422, 'Please give your password.');
+        }
+        $_SESSION['myPass'] = $myPass;
+        echo "Creating configuration files using the given information...\n";
+        echo self::exec('cp -f /opt/processing/webserver/html/socket.js.template /opt/processing/webserver/html/socket.js && echo "OK (1/4)"');
+        echo self::exec("sed -i \"s/127.0.0.1/$myIp/\" /opt/processing/webserver/html/socket.js && echo \"OK (2/4)\"");
+        echo self::exec('cp -f /opt/input/robot_scripts/start.sh.template /opt/input/robot_scripts/start.sh && echo "OK (3/4)"');
+        echo self::exec("sed -i -e 's/unknown1/$myIp/' -e 's/unknown2/$myUser/' -e 's/unknown3/$myPass/' /opt/input/robot_scripts/start.sh && echo \"OK (4/4)\"");
 
         // LAN IP-address of the Nao/Pepper (if used)
         if (empty($robotIp) || filter_var($robotIp, FILTER_VALIDATE_IP)) {
@@ -54,25 +81,32 @@ class HomeController
         // Copy files to the robot if appropriate
         if (! empty($robotIp) && ! empty($robotPass)) {
             $o = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR';
-            echo "Copying files to the robot using the given IP and password...\n";
+            echo "\nCopying files to the robot using the given IP and password...\n";
             echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp \"mkdir -p /home/nao/cbsr\" && echo \"OK (1/4)\"");
-            $input  = '/opt/input/';
+            $input = '/opt/input/';
             $output = '/opt/output/';
-            $files  = [
-                $input.'cert.pem', $input.'robot_scripts/start.sh', $input.'robot_scripts/stop.sh',$input.'robot_events/event_producer.py',
-                $input.'robot_microphone/robot_sound_processing.py', $input.'robot_camera/visual_producer.py',
-                $output.'robot_actions/action_consumer.py', $output.'robot_tablet/tablet.py', $output.'robot_tablet/tablet_consumer.py'
+            $files = [
+                $input . 'cert.pem',
+                $input . 'robot_scripts/start.sh',
+                $input . 'robot_scripts/stop.sh',
+                $input . 'robot_camera/video_producer.py',
+                $input . 'robot_events/event_producer.py',
+                $input . 'robot_microphone/audio_producer.py',
+                $output . 'robot_actions/action_consumer.py',
+                $output . 'robot_sound/audio_consumer.py',
+                $output . 'robot_tablet/tablet.py',
+                $output . 'robot_tablet/tablet_consumer.py'
             ];
             $scp = '';
-            foreach($files as $file) {
+            foreach ($files as $file) {
                 $scp .= "sshpass -p $robotPass scp $o -p $file nao@$robotIp:/home/nao/cbsr/ &&";
             }
-            echo self::exec($scp.'echo "OK (2/4)"');
+            echo self::exec($scp . 'echo "OK (2/4)"');
             echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/stop.sh && echo \"OK (3/4)\"");
             echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/start.sh && echo \"OK (4/4)\"");
         }
     }
-    
+
     public function robotLogs(Request $request, Response $response, $args)
     {
         $robotIp = $_SESSION['robotIp'];
@@ -81,13 +115,33 @@ class HomeController
             return $response->withStatus(400, 'No robot IP and/or password set.');
         } else {
             $o = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR';
-            $logs = ['action_consumer', 'event_producer', 'robot_sound_processing', 'tablet_consumer', 'visual_producer'];
+            $logs = [
+                'action_consumer',
+                'audio_consumer',
+                'audio_producer',
+                'event_producer',
+                'tablet_consumer',
+                'video_producer'
+            ];
             foreach ($logs as $log) {
                 echo "<br><b>$log</b><br>";
                 echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/$log.log");
             }
         }
-    }    
+    }
+
+    public function robotDisconnect(Request $request, Response $response, $args)
+    {
+        $robotIp = $_SESSION['robotIp'];
+        $robotPass = $_SESSION['robotPass'];
+        if (empty($robotIp) || empty($robotPass)) {
+            return $response->withStatus(400, 'No robot IP and/or password set.');
+        } else {
+            $o = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR';
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/stop.sh && echo \"OK (1/2)\"");
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp rm -rf /home/nao/cbsr && echo \"OK (2/2)\"");
+        }
+    }
 
     /**
      * Execute a command and return it's output.
@@ -102,7 +156,20 @@ class HomeController
      */
     private static function exec($cmd, $timeout = 60)
     {
-        $descriptors = [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']];
+        $descriptors = [
+            [
+                'pipe',
+                'r'
+            ],
+            [
+                'pipe',
+                'w'
+            ],
+            [
+                'pipe',
+                'w'
+            ]
+        ];
         $process = proc_open($cmd, $descriptors, $pipes);
         if (! is_resource($process)) {
             throw new \Exception('Could not execute process');
@@ -121,7 +188,9 @@ class HomeController
             $start = microtime(true);
 
             // Wait until we have output or the timer expired.
-            $read = [$pipes[1]];
+            $read = [
+                $pipes[1]
+            ];
             $other = [];
             stream_select($read, $other, $other, 0, $timeout);
 

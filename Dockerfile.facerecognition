@@ -32,11 +32,14 @@ RUN cd ~ && \
     cd dlib/ && \
     python2 setup.py install
 
-RUN pip2 install --upgrade pip \
+RUN pip2 install --no-cache-dir --upgrade pip \
     redis \
 	hiredis \
 	opencv-python-headless \
 	numpy \
 	imutils \
 	Pillow \
-	face_recognition
+	face_recognition \
+	tensorflow \
+	keras~=2.3.0 \
+	pandas

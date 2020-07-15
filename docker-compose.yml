@@ -217,12 +217,15 @@ services:
       context: .
       dockerfile: Dockerfile.facerecognition
     hostname: face_recognition
-    
+
     working_dir: /face_recognition
-    command: python2 qi_face_recognition.py --server 172.16.238.12
+    command: python2 face_recognition_factory.py --server 172.16.238.12
     volumes:
       - ../processing/video_facerecognition:/face_recognition:rw${MOUNT_OPTIONS}
-    
+
+    tty: true
+    stdin_open: false
+
     networks:
       app_net:
         ipv4_address: 172.16.238.13
@@ -239,12 +242,15 @@ services:
       context: .
       dockerfile: Dockerfile.facerecognition
     hostname: people_detection
-    
+
     working_dir: /people_detection
-    command: python2 qi_person_detection.py --server 172.16.238.12
+    command: python2 people_detection_factory.py --server 172.16.238.12
     volumes:
       - ../processing/video_peopledetection:/people_detection:ro${MOUNT_OPTIONS}
-    
+
+    tty: true
+    stdin_open: false
+
     networks:
       app_net:
         ipv4_address: 172.16.238.14
@@ -261,12 +267,15 @@ services:
       context: .
       dockerfile: Dockerfile.java8
     hostname: dialogflow
-    
+
     working_dir: /dialogflow
     command: java -XX:+UseG1GC -jar audio-dialogflow.jar 172.16.238.12
     volumes:
       - ../processing/audio_dialogflow:/dialogflow:ro${MOUNT_OPTIONS}
-    
+
+    tty: true
+    stdin_open: false
+
     networks:
       app_net:
         ipv4_address: 172.16.238.15
@@ -283,19 +292,72 @@ services:
       context: .
       dockerfile: Dockerfile.java8
     hostname: webserver
-    
+
     working_dir: /webserver
     command: java -XX:+UseG1GC -jar webserver.jar 172.16.238.12
     volumes:
       - ../processing/webserver:/webserver:ro${MOUNT_OPTIONS}
 
+    tty: true
+    stdin_open: false
+
     ports:
       - "8000:8000"
       - "8001:8001"
-    
+
     networks:
       app_net:
         ipv4_address: 172.16.238.16
+
+    depends_on:
+      - redis
+
+  # ------------------------------------------------------------
+  # Emotion Detection service
+  # ------------------------------------------------------------
+  emotion_detection:
+    image: face_recognition
+    build:
+      context: .
+      dockerfile: Dockerfile.facerecognition
+    hostname: emotion_detection
+
+    working_dir: /emotion_detection
+    command: python2 emotion_detection_factory.py --server 172.16.238.12
+    volumes:
+      - ../processing/video_emotion:/emotion_detection:ro${MOUNT_OPTIONS}
+
+    tty: true
+    stdin_open: false
+
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.17
+
+    depends_on:
+      - redis
+
+  # ------------------------------------------------------------
+  # Robot Memory service
+  # ------------------------------------------------------------
+  robot_memory:
+    image: python2
+    build:
+      context: .
+      dockerfile: Dockerfile.python2
+    hostname: robot_memory
+
+    working_dir: /robot_memory
+    command: python2 robot_memory_factory.py --server 172.16.238.12
+    volumes:
+      - ../processing/robot_memory:/robot_memory:ro${MOUNT_OPTIONS}
+
+    tty: true
+    stdin_open: false
+
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.18
 
     depends_on:
       - redis

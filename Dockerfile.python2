@@ -1,0 +1,7 @@
+FROM python:2.7-slim
+
+ENV PYTHONUNBUFFERED=1
+
+RUN apt-get -y update
+
+RUN pip2 install --no-cache-dir --upgrade pip redis hiredis
