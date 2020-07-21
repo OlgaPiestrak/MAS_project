@@ -63,10 +63,12 @@ class HomeController
         }
         $_SESSION['myPass'] = $myPass;
         echo "Creating configuration files using the given information...\n";
-        echo self::exec('cp -f /opt/processing/webserver/html/socket.js.template /opt/processing/webserver/html/socket.js && echo "OK (1/4)"');
-        echo self::exec("sed -i \"s/127.0.0.1/$myIp/\" /opt/processing/webserver/html/socket.js && echo \"OK (2/4)\"");
-        echo self::exec('cp -f /opt/input/robot_scripts/start.sh.template /opt/input/robot_scripts/start.sh && echo "OK (3/4)"');
-        echo self::exec("sed -i -e 's/unknown1/$myIp/' -e 's/unknown2/$myUser/' -e 's/unknown3/$myPass/' /opt/input/robot_scripts/start.sh && echo \"OK (4/4)\"");
+		$path = '/opt/cbsr';
+        echo self::exec("cp -f $path/webserver/html/socket.js.template $path/webserver/html/socket.js && echo \"OK (1/4)\"");
+        echo self::exec("sed -i \"s/127.0.0.1/$myIp/\" $path/webserver/html/socket.js && echo \"OK (2/4)\"");
+		$path .= '/robot_scripts';
+        echo self::exec("cp -f $path/start.sh.template $path/start.sh && echo \"OK (3/4)\"");
+        echo self::exec("sed -i -e 's/unknown1/$myIp/' -e 's/unknown2/$myUser/' -e 's/unknown3/$myPass/' $path/start.sh && echo \"OK (4/4)\"");
 
         // LAN IP-address of the Nao/Pepper (if used)
         if (empty($robotIp) || filter_var($robotIp, FILTER_VALIDATE_IP)) {
@@ -83,20 +85,8 @@ class HomeController
             $o = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR';
             echo "\nCopying files to the robot using the given IP and password...\n";
             echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp \"mkdir -p /home/nao/cbsr\" && echo \"OK (1/4)\"");
-            $input = '/opt/input/';
-            $output = '/opt/output/';
-            $files = [
-                $input . 'cert.pem',
-                $input . 'robot_scripts/start.sh',
-                $input . 'robot_scripts/stop.sh',
-                $input . 'robot_camera/video_producer.py',
-                $input . 'robot_events/event_producer.py',
-                $input . 'robot_microphone/audio_producer.py',
-                $output . 'robot_actions/action_consumer.py',
-                $output . 'robot_sound/audio_consumer.py',
-                $output . 'robot_tablet/tablet.py',
-                $output . 'robot_tablet/tablet_consumer.py'
-            ];
+            $files = ["$path/cert.pem", "$path/start.sh", "$path/stop.sh", "$path/video_producer.py", "$path/event_producer.py",
+                "$path/audio_producer.py", "$path/action_consumer.py", "$path/audio_consumer.py", "$path/tablet.py", "$path/tablet_consumer.py"];
             $scp = '';
             foreach ($files as $file) {
                 $scp .= "sshpass -p $robotPass scp $o -p $file nao@$robotIp:/home/nao/cbsr/ &&";
@@ -115,14 +105,7 @@ class HomeController
             return $response->withStatus(400, 'No robot IP and/or password set.');
         } else {
             $o = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR';
-            $logs = [
-                'action_consumer',
-                'audio_consumer',
-                'audio_producer',
-                'event_producer',
-                'tablet_consumer',
-                'video_producer'
-            ];
+            $logs = ['action_consumer', 'audio_consumer', 'audio_producer', 'event_producer', 'tablet_consumer', 'video_producer'];
             foreach ($logs as $log) {
                 echo "<br><b>$log</b><br>";
                 echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp cat /home/nao/cbsr/$log.log");

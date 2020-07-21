@@ -39,7 +39,7 @@ $(function () {
   </div>
   <div class="form-group">
     <label for="robotPass">Robot Password:</label>
-    <input type="text" class="form-control" name="robotPass" aria-describedby="robotPassHelp" value="<?= $_SESSION['robotPass'] ?? '' ?>">
+    <input type="password" class="form-control" name="robotPass" aria-describedby="robotPassHelp" value="<?= $_SESSION['robotPass'] ?? '' ?>">
     <small id="robotPassHelp" class="form-text text-muted">Enter the password for the Nao/Pepper (if used)</small>
   </div>
   <button type="submit" class="btn btn-primary">Submit</button>

@@ -117,12 +117,8 @@ services:
       - ./ca:/ca:rw${MOUNT_OPTIONS}
       # Users SSH directory (read-only)
       - ${HOST_PATH_SSH_DIR}:/home/devilbox/.ssh:ro${MOUNT_OPTIONS}
-      # CBSR Input
-      - ../input:/opt/input:rw${MOUNT_OPTIONS}
-      # CBSR Processing
-      - ../processing:/opt/processing:rw${MOUNT_OPTIONS}
-      # CBSR Output
-      - ../output:/opt/output:rw${MOUNT_OPTIONS}
+      # CBSR
+      - ./cbsr:/opt/cbsr:rw${MOUNT_OPTIONS}
 
     depends_on:
       - bind
@@ -221,7 +217,7 @@ services:
     working_dir: /face_recognition
     command: python2 face_recognition_factory.py --server 172.16.238.12
     volumes:
-      - ../processing/video_facerecognition:/face_recognition:rw${MOUNT_OPTIONS}
+      - ./cbsr/face_recognition:/face_recognition:rw${MOUNT_OPTIONS}
 
     tty: true
     stdin_open: false
@@ -246,7 +242,7 @@ services:
     working_dir: /people_detection
     command: python2 people_detection_factory.py --server 172.16.238.12
     volumes:
-      - ../processing/video_peopledetection:/people_detection:ro${MOUNT_OPTIONS}
+      - ./cbsr/people_detection:/people_detection:ro${MOUNT_OPTIONS}
 
     tty: true
     stdin_open: false
@@ -271,7 +267,7 @@ services:
     working_dir: /dialogflow
     command: java -XX:+UseG1GC -jar audio-dialogflow.jar 172.16.238.12
     volumes:
-      - ../processing/audio_dialogflow:/dialogflow:ro${MOUNT_OPTIONS}
+      - ./cbsr/dialogflow:/dialogflow:ro${MOUNT_OPTIONS}
 
     tty: true
     stdin_open: false
@@ -296,7 +292,7 @@ services:
     working_dir: /webserver
     command: java -XX:+UseG1GC -jar webserver.jar 172.16.238.12
     volumes:
-      - ../processing/webserver:/webserver:ro${MOUNT_OPTIONS}
+      - ./cbsr/webserver:/webserver:ro${MOUNT_OPTIONS}
 
     tty: true
     stdin_open: false
@@ -325,7 +321,7 @@ services:
     working_dir: /emotion_detection
     command: python2 emotion_detection_factory.py --server 172.16.238.12
     volumes:
-      - ../processing/video_emotion:/emotion_detection:ro${MOUNT_OPTIONS}
+      - ./cbsr/emotion_detection:/emotion_detection:ro${MOUNT_OPTIONS}
 
     tty: true
     stdin_open: false
@@ -350,7 +346,7 @@ services:
     working_dir: /robot_memory
     command: python2 robot_memory_factory.py --server 172.16.238.12
     volumes:
-      - ../processing/robot_memory:/robot_memory:ro${MOUNT_OPTIONS}
+      - ./cbsr/robot_memory:/robot_memory:ro${MOUNT_OPTIONS}
 
     tty: true
     stdin_open: false

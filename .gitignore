@@ -24,6 +24,7 @@
 ###### std ######
 .lock
 *.log
+*.pyc
 
 ###### patches/diffs ######
 *.patch
