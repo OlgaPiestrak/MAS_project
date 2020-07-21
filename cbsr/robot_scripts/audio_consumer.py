@@ -2,13 +2,13 @@ import os
 import ssl
 from argparse import ArgumentParser
 from shutil import rmtree
+from tempfile import NamedTemporaryFile
 from threading import Thread
 from time import sleep, time
 from uuid import getnode
 
 from qi import Application
 from redis import Redis
-from wget import download
 
 
 class RobotAudio(object):
@@ -69,7 +69,7 @@ class RobotAudio(object):
     def process_message(self, message):
         channel = message['channel'][self.cutoff:]
         data = message['data']
-        print(channel + ': ' + data)
+        print(channel)  # + ': ' + data)
 
         if channel == 'action_say':
             if len(data.strip()) > 0:
@@ -87,23 +87,23 @@ class RobotAudio(object):
             self.change_language(data)
             self.produce('LanguageChanged')
         elif channel == 'action_load_audio':
-            audio_file = self.download_audio(data)
+            audio_file = self.store_audio(data)
             audio_id = self.audio_player.loadFile(audio_file)
             self.redis.publish('robot_audio_loaded', audio_id)
             self.produce('LoadAudioDone')
         elif channel == 'action_play_audio':
             self.audio_player.stopAll()
-            params = data.split(';')
-            if params[1] == 'raw':
-                audio_file = self.download_audio(params[0])
+            try:
+                loaded = int(data)
+                self.produce('PlayAudioStarted')
+                self.audio_player.play(loaded)
+                self.produce('PlayAudioDone')
+            except:
+                audio_file = self.store_audio(data)
                 self.produce('PlayAudioStarted')
                 self.audio_player.playFile(audio_file)
                 self.produce('PlayAudioDone')
                 os.remove(audio_file)
-            else:
-                self.produce('PlayAudioStarted')
-                self.audio_player.play(int(params[0]))
-                self.produce('PlayAudioDone')
         elif channel == 'action_clear_loaded_audio':
             self.audio_player.unloadAllFiles()
             rmtree(self.audio_folder)
@@ -123,9 +123,11 @@ class RobotAudio(object):
         else:
             self.language.setLanguage('English')
 
-    def download_audio(self, file_name):
-        audio_location = os.path.join(self.audio_folder, file_name)
-        download('https://' + self.server + ':8000/audio/' + file_name, audio_location)
+    @staticmethod
+    def store_audio(data):
+        audio_location = NamedTemporaryFile().name
+        with open(audio_location, 'wb') as f:
+            f.write(data)
         return audio_location
 
     def cleanup(self):

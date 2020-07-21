@@ -1,7 +1,8 @@
+from io import BytesIO
 from os.path import isfile
 from pickle import load, dump
 from threading import Event, Thread
-from time import gmtime, mktime, sleep, strftime
+from time import gmtime, mktime, sleep
 
 import cv2
 import face_recognition
@@ -101,11 +102,11 @@ class FaceRecognitionService(object):
                     self.image_height = int(image_size_string[4:])
                 image = Image.frombytes('RGB', (self.image_width, self.image_height), image_stream)
 
-                # If image needs to be saved, save it to the webserver
+                # If image needs to be saved, publish it on Redis
                 if self.save_image:
-                    img = strftime('%Y%m%d-%H%M%S') + '.jpg'
-                    image.save('../webserver/html/img/' + img)
-                    self.redis.publish(self.identifier + '_picture_newfile', img)
+                    bytes_io = BytesIO()
+                    image.save(bytes_io)
+                    self.redis.publish(self.identifier + '_picture_newfile', bytes_io.getvalue())
                     self.save_image = False
 
                 # Convert to OpenCV

@@ -3,7 +3,7 @@ SERVER=unknown1
 USER=unknown2
 PASS=unknown3
 
-pip install redis hiredis wget --user --upgrade
+pip install redis hiredis --user --upgrade
 
 cd "$(dirname "$0")"
 for f in *.pid; do
