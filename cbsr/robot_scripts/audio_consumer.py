@@ -89,7 +89,7 @@ class RobotAudio(object):
         elif channel == 'action_load_audio':
             audio_file = self.store_audio(data)
             audio_id = self.audio_player.loadFile(audio_file)
-            self.redis.publish('robot_audio_loaded', audio_id)
+            self.redis.publish(self.identifier + '_robot_audio_loaded', audio_id)
             self.produce('LoadAudioDone')
         elif channel == 'action_play_audio':
             self.audio_player.stopAll()
