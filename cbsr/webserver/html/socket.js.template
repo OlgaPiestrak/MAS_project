@@ -52,6 +52,7 @@ function englishFlag() {
 	englishFlag.html('<img src="img/english_flag.png" '+iconStyle+'>');
 	englishFlag.click(function() {
 		socket.send('audio_language|en-US');
+		socket.send('dialogflow_language|en-US');
 	});
 }
 function activateButtons() {

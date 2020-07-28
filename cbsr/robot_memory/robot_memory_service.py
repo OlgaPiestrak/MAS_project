@@ -116,7 +116,7 @@ class RobotMemoryService:
             print(self.identifier + ' > Could not get user data due to: ' + err.message)
 
     def produce_event(self, value):
-        self.redis.publish(self.identifier + '_events_memory', value)
+        self.redis.publish(self.identifier + '_events', value)
 
     def produce_data(self, key, value):
         self.redis.publish(self.identifier + '_memory_data', str(key) + ';' + str(value))

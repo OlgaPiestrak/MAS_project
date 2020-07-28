@@ -90,7 +90,6 @@ class RobotAudio(object):
             audio_file = self.store_audio(data)
             audio_id = self.audio_player.loadFile(audio_file)
             self.redis.publish(self.identifier + '_robot_audio_loaded', audio_id)
-            self.produce('LoadAudioDone')
         elif channel == 'action_play_audio':
             self.audio_player.stopAll()
             try:
@@ -112,6 +111,7 @@ class RobotAudio(object):
         elif channel == 'action_speech_param':
             params = data.split(';')
             self.tts.setParameter(params[0], float(params[1]))
+            self.produce('SetSpeechParamDone')
         elif channel == 'action_stop_talking':
             self.tts.stopAll()
         else:
