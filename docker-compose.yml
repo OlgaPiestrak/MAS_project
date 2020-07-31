@@ -55,7 +55,10 @@ services:
   # PHP
   # ------------------------------------------------------------
   php:
-    image: devilbox/php-fpm:${PHP_SERVER}-work-0.106
+    image: php_fpm
+    build:
+      context: .
+      dockerfile: Dockerfile.php74
     hostname: php
 
     # Source all variables defined in .env

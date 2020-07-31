@@ -1,0 +1,7 @@
+FROM devilbox/php-fpm:7.4-work
+
+RUN apt-get -y update
+RUN apt-get install -y --fix-missing sshpass
+
+RUN pip2 install --no-cache-dir --upgrade pip redis hiredis simplejson
+RUN composer self-update
