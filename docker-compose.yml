@@ -55,7 +55,7 @@ services:
   # PHP
   # ------------------------------------------------------------
   php:
-    image: php_fpm
+    image: cbsr_php_fpm
     build:
       context: .
       dockerfile: Dockerfile.php74
