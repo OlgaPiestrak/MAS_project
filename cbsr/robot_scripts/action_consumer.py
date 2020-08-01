@@ -7,6 +7,8 @@ from qi import Application
 from redis import Redis
 from simplejson import dumps, loads
 
+from transformation import Transformation
+
 YELLOW = 0x969600
 MAGENTA = 0xff00ff
 ORANGE = 0xfa7800
@@ -149,6 +151,12 @@ class RobotConsumer(object):
             self.process_action_play_motion(data)
         elif channel == 'action_record_motion':
             self.process_action_record_motion(data)
+        elif channel == 'action_motion_file':
+            params = data.split(';')
+            animation = params[0]
+            emotion = params[1] if (len(params) > 1) else None
+            transformation = Transformation(animation, emotion, False)
+            self.process_action_play_motion(transformation.get_json())
         else:
             print('Unknown command')
 
@@ -197,7 +205,7 @@ class RobotConsumer(object):
         except ValueError as err:
             print('action_stiffness received incorrect input: ' + err.message)
 
-    def process_action_play_motion(self, message):
+    def process_action_play_motion(self, message, compressed=True):
         """
         Play a motion of a given robot by moving a given set of joints to a given angle for a given time frame.
 
@@ -207,13 +215,16 @@ class RobotConsumer(object):
         :return:
         """
         try:
-            # get motion from message
-            data = self.decompress_motion(message)
-            # Extract the the joints, the angles, and the time points from the motion dict.
-            if data['robot'] != self.robot_type:
-                raise ValueError('Motion not suitable for ' + self.robot_type)
+            if compressed:
+                # get motion from message
+                data = self.decompress_motion(message)
+                # Extract the the joints, the angles, and the time points from the motion dict.
+                if data['robot'] != self.robot_type:
+                    raise ValueError('Motion not suitable for ' + self.robot_type)
+                motion = data['motion']
+            else:
+                motion = message
 
-            motion = data['motion']
             joints = []
             start_angle = []
             angles = []
@@ -501,7 +512,8 @@ if __name__ == '__main__':
                                        topics=['action_gesture', 'action_eyecolour', 'action_earcolour',
                                                'action_headcolour', 'action_idle', 'action_turn', 'action_turn_small',
                                                'action_wakeup', 'action_rest', 'action_set_breathing', 'action_posture',
-                                               'action_stiffness', 'action_play_motion', 'action_record_motion'])
+                                               'action_stiffness', 'action_play_motion', 'action_record_motion',
+                                               'action_motion_file'])
         # session_id = app.session.registerService(name, robot_consumer)
         app.run()  # blocking
         robot_consumer.cleanup()
