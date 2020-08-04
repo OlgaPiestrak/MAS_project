@@ -11,7 +11,8 @@ for f in *.pid; do
   fi
 done
 
-../.local/bin/pip install --user --upgrade --no-cache-dir pip redis hiredis pandas
+/usr/bin/pip install --user --upgrade pip
+../.local/bin/pip install --user --upgrade --no-cache-dir redis~=3.5 hiredis~=1.1 pandas~=0.24
 
 cp -f cert.pem ../
 nohup python -u action_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" > action_consumer.log 2>&1 & echo $! > action_consumer.pid
