@@ -93,8 +93,8 @@ class HomeController
                 $scp .= "sshpass -p $robotPass scp $o -p $file nao@$robotIp:/home/nao/cbsr/ &&";
             }
             echo self::exec($scp . 'echo "OK (2/4)"');
-            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/stop.sh && echo \"OK (3/4)\"");
-            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash --login -c /home/nao/cbsr/start.sh && echo \"OK (4/4)\"");
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash -lc /home/nao/cbsr/stop.sh && echo \"OK (3/4)\"");
+            echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp bash -lc /home/nao/cbsr/start.sh && echo \"OK (4/4)\"");
         }
     }
 
