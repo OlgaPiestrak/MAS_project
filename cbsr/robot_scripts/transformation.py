@@ -1,5 +1,4 @@
 from colorsys import hsv_to_rgb
-from json import dumps
 from math import atan2, degrees
 from xml.etree.ElementTree import XML
 
@@ -102,11 +101,11 @@ BEND = {
 
 class Transformation(object):
     def __init__(self, xml, emotion=None):
-        self.root = XML(xml).getroot()
+        self.root = XML(xml)
         self.emotion_name = emotion
         self.emotion = EMOTIONS[emotion] if (emotion in EMOTIONS) else None
 
-    def get_json(self):
+    def get_behavior(self):
         behavior, pivot_states = self.get_angle_time_representation()
         if self.emotion:
             behavior = self.modify_flow_parameters(behavior, pivot_states)
@@ -114,7 +113,7 @@ class Transformation(object):
             behavior = self.modify_weight_parameters(behavior)
             # behavior = self.modify_led_parameters(behavior)
 
-        return dumps(behavior)
+        return behavior
 
     def get_angle_time_representation(self):
         # TODO: adjusted speed

@@ -155,8 +155,8 @@ class RobotConsumer(object):
             params = data.split(';')
             animation = params[0]
             emotion = params[1] if (len(params) > 1) else None
-            transformation = Transformation(animation, emotion, False)
-            self.process_action_play_motion(transformation.get_json())
+            transformed = Transformation(animation, emotion).get_behavior()
+            self.process_action_play_motion(transformed, False)
         else:
             print('Unknown command')
 
@@ -234,16 +234,17 @@ class RobotConsumer(object):
                 tms = motion[joint]['times']
                 # To protect the robots hardware from incorrect commands, do extensive checks.
                 if joint not in self.all_joints:
-                    raise ValueError('Joint ' + str(joint) + ' not recognized.')
-                if not angl or not tms:
-                    raise ValueError('Joint ' + str(joint) + ' has no values')
-                if len(angl) != len(tms):
-                    raise ValueError('The angle list size (' + str(len(angl)) + ') is not equal to ' +
-                                     'the times list size (' + str(len(tms)) + ').')
-                joints.append(joint)
-                start_angle.append(angl[0])
-                angles.append(angl[1:])
-                times.append(tms[1:])
+                    print('Joint ' + str(joint) + ' not recognized.')
+                elif not angl or not tms:
+                    print('Joint ' + str(joint) + ' has no values')
+                elif len(angl) != len(tms):
+                    print('The angle list size (' + str(len(angl)) + ') is not equal to ' +
+                          'the times list size (' + str(len(tms)) + ') for ' + str(joint) + '.')
+                else:
+                    joints.append(joint)
+                    start_angle.append(angl[0])
+                    angles.append(angl[1:])
+                    times.append(tms[1:])
 
             self.produce('PlayMotionStarted')
             # Go safely to start position
