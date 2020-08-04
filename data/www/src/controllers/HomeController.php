@@ -69,6 +69,7 @@ class HomeController
 		$path .= '/robot_scripts';
         echo self::exec("cp -f $path/start.sh.template $path/start.sh && echo \"OK (3/4)\"");
         echo self::exec("sed -i -e 's/unknown1/$myIp/' -e 's/unknown2/$myUser/' -e 's/unknown3/$myPass/' $path/start.sh && echo \"OK (4/4)\"");
+		self::exec("chmod +x $path/*.sh");
 
         // LAN IP-address of the Nao/Pepper (if used)
         if (empty($robotIp) || filter_var($robotIp, FILTER_VALIDATE_IP)) {
