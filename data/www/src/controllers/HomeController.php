@@ -87,7 +87,8 @@ class HomeController
             echo "\nCopying files to the robot using the given IP and password...\n";
             echo self::exec("sshpass -p $robotPass ssh $o nao@$robotIp \"mkdir -p /home/nao/cbsr\" && echo \"OK (1/4)\"");
             $files = ["$path/cert.pem", "$path/start.sh", "$path/stop.sh", "$path/video_producer.py", "$path/event_producer.py",
-                "$path/audio_producer.py", "$path/action_consumer.py", "$path/audio_consumer.py", "$path/tablet.py", "$path/tablet_consumer.py"];
+                "$path/audio_producer.py", "$path/action_consumer.py", "$path/audio_consumer.py", "$path/tablet.py", "$path/tablet_consumer.py",
+				"$path/transformation.py"];
             $scp = '';
             foreach ($files as $file) {
                 $scp .= "sshpass -p $robotPass scp $o -p $file nao@$robotIp:/home/nao/cbsr/ &&";
