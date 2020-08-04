@@ -2,6 +2,4 @@ FROM python:2.7-slim
 
 ENV PYTHONUNBUFFERED=1
 
-RUN apt-get -y update
-
 RUN pip2 install --no-cache-dir --upgrade pip redis~=3.5 hiredis~=1.1 simplejson~=3.17

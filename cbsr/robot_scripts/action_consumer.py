@@ -78,7 +78,7 @@ class RobotConsumer(object):
     def process_message(self, message):
         channel = message['channel'][self.cutoff:]
         data = message['data']
-        print(channel + ': ' + data)
+        print(channel)
 
         if channel == 'action_gesture':
             self.produce('GestureStarted')

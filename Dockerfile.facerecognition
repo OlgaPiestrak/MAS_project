@@ -28,18 +28,18 @@ RUN apt-get install -y --fix-missing \
 
 RUN cd ~ && \
     mkdir -p dlib && \
-    git clone -b 'v19.19' --single-branch https://github.com/davisking/dlib.git dlib/ && \
+    git clone -b 'v19.20' --single-branch https://github.com/davisking/dlib.git dlib/ && \
     cd dlib/ && \
     python2 setup.py install
 
 RUN pip2 install --no-cache-dir --upgrade pip \
-    redis \
-	hiredis \
-	opencv-python-headless \
-	numpy \
-	imutils \
-	Pillow \
-	face_recognition \
-	tensorflow \
+    redis~=3.5 \
+	hiredis~=1.1 \
+	opencv-python-headless~=4.2 \
+	numpy~=1.16 \
+	imutils~=0.5 \
+	Pillow~=6.2 \
+	face_recognition~=1.3 \
+	tensorflow~=2.1 \
 	keras~=2.3.0 \
-	pandas
+	pandas~=0.24
