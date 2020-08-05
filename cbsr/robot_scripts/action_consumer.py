@@ -132,9 +132,13 @@ class RobotConsumer(object):
             self.motion.waitUntilMoveIsFinished()
             self.produce('SmallTurnDone')
         elif channel == 'action_wakeup':
+            self.produce('WakeUpStarted')
             self.motion.wakeUp()
+            self.produce('WakeUpDone')
         elif channel == 'action_rest':
+            self.produce('RestStarted')
             self.motion.rest()
+            self.produce('RestDone')
         elif channel == 'action_set_breathing':
             params = data.split(';')
             enable = bool(int(params[1]))
