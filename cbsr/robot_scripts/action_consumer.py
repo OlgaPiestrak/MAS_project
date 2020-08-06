@@ -290,9 +290,10 @@ class RobotConsumer(object):
             elif message == 'stop':
                 self.is_motion_recording = False
                 self.record_motion_thread.join()
-                self.redis.publish('robot_motion_recording', self.compress_motion(self.recorded_motion,
-                                                                                  PRECISION_FACTOR_MOTION_ANGLES,
-                                                                                  PRECISION_FACTOR_MOTION_TIMES))
+                self.redis.publish(self.identifier + '_robot_motion_recording',
+                                   self.compress_motion(self.recorded_motion,
+                                                        PRECISION_FACTOR_MOTION_ANGLES,
+                                                        PRECISION_FACTOR_MOTION_TIMES))
                 self.recorded_motion = {}
             else:
                 raise ValueError('Command for action_record_motion not recognized: ' + message)
