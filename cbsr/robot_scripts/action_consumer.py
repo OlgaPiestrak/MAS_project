@@ -206,6 +206,7 @@ class RobotConsumer(object):
             if not (isinstance(chains, list)):
                 raise ValueError('Input parameter "joint chains" should be a list')
             self.motion.stiffnessInterpolation(chains, stiffness, duration)
+            self.produce('SetStiffnessDone')
         except ValueError as err:
             print('action_stiffness received incorrect input: ' + err.message)
 
@@ -218,6 +219,7 @@ class RobotConsumer(object):
         'motion': {'Joint1': {'angles': list, 'times': list}, 'JointN: {...}}}
         :return:
         """
+        print('playMotion: ' + str(message))
         try:
             if compressed:
                 # get motion from message
@@ -294,6 +296,9 @@ class RobotConsumer(object):
                                    self.compress_motion(self.recorded_motion,
                                                         PRECISION_FACTOR_MOTION_ANGLES,
                                                         PRECISION_FACTOR_MOTION_TIMES))
+                print('RecordMotion: ' + str(self.compress_motion(self.recorded_motion,
+                                                        PRECISION_FACTOR_MOTION_ANGLES,
+                                                        PRECISION_FACTOR_MOTION_TIMES)))
                 self.recorded_motion = {}
             else:
                 raise ValueError('Command for action_record_motion not recognized: ' + message)
@@ -399,12 +404,14 @@ class RobotConsumer(object):
                                                  motion['motion'][joint]['angles']]
             motion['motion'][joint]['times'] = [int(round(t * precision_factor_times)) for t in
                                                 motion['motion'][joint]['times']]
-        motion = dumps(motion).encode('zlib_codec')
+        #motion = dumps(motion).encode('zlib_codec')
+        motion = dumps(motion, separators=(',', ':'))
         return motion
 
     @staticmethod
     def decompress_motion(motion):
-        motion = loads(motion.decode('zlib_codec'))
+        #motion = loads(motion.decode('zlib_codec'))
+        motion = loads(motion)
         precision_factor_angles = float(motion['precision_factor_angles'])
         precision_factor_times = float(motion['precision_factor_times'])
         for joint in motion['motion'].keys():
