@@ -130,7 +130,7 @@ services:
   # Web Server
   # ------------------------------------------------------------
   httpd:
-    image: devilbox/${HTTPD_SERVER}:0.32
+    image: devilbox/${HTTPD_SERVER}:latest
     hostname: httpd
 
     environment:
