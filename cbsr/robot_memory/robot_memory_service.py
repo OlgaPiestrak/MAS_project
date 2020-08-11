@@ -1,9 +1,9 @@
 from datetime import datetime
 from threading import Thread
 from time import gmtime, mktime, sleep
-from simplejson import loads
 
-from redis import DataError, Redis
+from redis import DataError
+from simplejson import loads
 
 
 class EntryIncorrectFormatError(Exception):
@@ -17,12 +17,13 @@ class UserDoesNotExistError(Exception):
 
 
 class RobotMemoryService:
-    def __init__(self, server, identifier, disconnect):
+    def __init__(self, connect, identifier, disconnect):
+        self.redis = connect()
         self.identifier = identifier
         self.disconnect = disconnect
+
         # Redis initialization
-        self.redis = Redis(host=server, ssl=True, ssl_ca_certs='cert.pem', password='changemeplease')
-        print('Subscribing ' + identifier + ' to ' + server + '...')
+        print('Subscribing ' + identifier)
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe(**{identifier + '_memory_add_entry': self.entry_handler,
                                  identifier + '_memory_user_session': self.get_user_session,

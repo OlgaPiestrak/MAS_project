@@ -1,4 +1,4 @@
-from argparse import ArgumentParser
+from os import getenv
 from signal import pause, signal, SIGTERM, SIGINT
 from sys import exit
 from threading import Thread
@@ -9,13 +9,12 @@ from robot_memory_service import RobotMemoryService
 
 
 class RobotMemoryFactory(object):
-    def __init__(self, server):
-        self.server = server
+    def __init__(self):
         self.active = {}
 
         # Redis initialization
-        self.redis = Redis(host=server, ssl=True, ssl_ca_certs='cert.pem', password='changemeplease')
-        print('Subscribing to ' + server + '...')
+        self.redis = self.connect()
+        print('Subscribing...')
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe(**{'robot_memory': self.execute})
         self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)
@@ -25,6 +24,16 @@ class RobotMemoryFactory(object):
         signal(SIGINT, self.cleanup)
         self.running = True
 
+    @staticmethod
+    def connect():
+        host = getenv('DB_IP')
+        password = getenv('DB_PASS')
+        self_signed = getenv('DB_SSL_SELFSIGNED')
+        if self_signed == '1':
+            return Redis(host=host, ssl=True, ssl_ca_certs='cert.pem', password=password)
+        else:
+            return Redis(host=host, ssl=True, password=password)
+
     def execute(self, message):
         t = Thread(target=self.start_service, args=(message['data'],))
         t.start()
@@ -33,7 +42,7 @@ class RobotMemoryFactory(object):
         if data in self.active:
             print('Already running face recognition for ' + data)
         else:
-            memory_service = RobotMemoryService(server=self.server, identifier=data,
+            memory_service = RobotMemoryService(connect=self.connect, identifier=data,
                                                 disconnect=self.disconnect_service)
             self.active[data] = memory_service
 
@@ -60,9 +69,5 @@ class RobotMemoryFactory(object):
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('--server', type=str, default='localhost', help='Server IP address')
-    args = parser.parse_args()
-
-    robot_memory_factory = RobotMemoryFactory(server=args.server)
+    robot_memory_factory = RobotMemoryFactory()
     robot_memory_factory.run()

@@ -9,14 +9,13 @@ import face_recognition
 import numpy as np
 from PIL import Image
 from imutils.video import FPS
-from redis import Redis
 
 
 class FaceRecognitionService(object):
-    def __init__(self, server, identifier, disconnect, debug):
+    def __init__(self, connect, identifier, disconnect):
+        self.redis = connect()
         self.identifier = identifier
         self.disconnect = disconnect
-        self.debug = debug
         # Image size (filled later)
         self.image_width = 0
         self.image_height = 0
@@ -35,14 +34,11 @@ class FaceRecognitionService(object):
         if not isfile(self.face_encoding_path):
             dump([], open(self.face_encoding_path, 'wb'))
         self.face_encodings_list = load(open(self.face_encoding_path, 'rb'))
-        if self.debug:
-            print(self.identifier + ': Loaded ' + len(self.face_encodings_list) + ' encodings...')
         # Create a difference between background and foreground image
         self.fgbg = cv2.createBackgroundSubtractorMOG2()
 
         # Redis initialization
-        self.redis = Redis(host=server, ssl=True, ssl_ca_certs='cert.pem', password='changemeplease')
-        print('Subscribing ' + identifier + ' to ' + server + '...')
+        print('Subscribing ' + identifier)
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe(**{identifier + '_events': self.execute,
                                  identifier + '_image_available': self.set_image_available,
@@ -134,38 +130,14 @@ class FaceRecognitionService(object):
                     else:
                         index = match.index(True)
                         tmp = str(index)
-                        if self.debug:
-                            print(self.identifier + ': Non-consistent match comparing faces and euclidean distance')
-
                         if index == np.argmin(dist):
                             name = tmp
                             face_name.append(name)
-                            if self.debug:
-                                print('Face already recognised and consistent, ArgMin: ' + np.argmin(dist))
                             print(self.identifier + ': Recognised existing face (' + name + ')')
                         else:
                             print(self.identifier + ': Mismatch in recognition')
                             continue
-
                     self.redis.publish(self.identifier + '_recognised_face', name)
-
-                    if self.debug:
-                        for (top, right, bottom, left), name in zip(face_locations, face_name):
-                            cv2.rectangle(cv_image, (left, top), (right, bottom), (0, 0, 255), 2)
-                            cv2.rectangle(cv_image, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-                            font = cv2.FONT_HERSHEY_DUPLEX
-                            cv2.putText(cv_image, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
-
-                        cv2.namedWindow('Camera', cv2.WINDOW_NORMAL)
-                        cv2.imshow('Camera', cv_image)
-                        self.fps.update()
-                        cv2.waitKey(25)
-                        key = cv2.waitKey(1) & 0xFF
-                        if key == ord('q'):
-                            break
-
-                        print(self.identifier + ': Elapsed time: {:.2f}'.format(self.fps.elapsed()))
-                        print(self.identifier + ': Approx. FPS: {:.2f}'.format(self.fps.fps()))
                 else:
                     self.image_available_flag.wait()
         self.produce_event('FaceRecognitionDone')

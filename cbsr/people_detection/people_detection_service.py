@@ -7,14 +7,13 @@ from PIL import Image
 from face_recognition import face_locations
 from imutils import resize
 from numpy import asarray, uint8
-from redis import Redis
 
 
 class PeopleDetectionService(object):
-    def __init__(self, server, identifier, disconnect, debug):
+    def __init__(self, connect, identifier, disconnect):
+        self.redis = connect()
         self.identifier = identifier
         self.disconnect = disconnect
-        self.debug = debug
         # Image size (filled later)
         self.image_width = 0
         self.image_height = 0
@@ -25,8 +24,7 @@ class PeopleDetectionService(object):
         self.image_available_flag = Event()
 
         # Redis initialization
-        self.redis = Redis(host=server, ssl=True, ssl_ca_certs='cert.pem', password='changemeplease')
-        print('Subscribing ' + identifier + ' to ' + server + '...')
+        print('Subscribing ' + identifier)
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe(**{identifier + '_events': self.execute,
                                  identifier + '_image_available': self.set_image_available,
@@ -105,16 +103,6 @@ class PeopleDetectionService(object):
                 if faces:
                     print(self.identifier + ': Detected Person!')
                     self.redis.publish(self.identifier + '_detected_person', '')
-
-                if self.debug:
-                    if len(faces) > 0:
-                        self.draw_faces(process_image, faces)
-
-                    cv2.imshow('Detected person', process_image)
-
-                    cv2.waitKey(10)
-                    if cv2.waitKey(1) & 0xFF == ord('q'):
-                        cv2.destroyAllWindows()
             else:
                 self.image_available_flag.wait()
         self.produce_event('PeopleDetectionDone')
@@ -126,18 +114,6 @@ class PeopleDetectionService(object):
 
     def take_picture(self, message):
         self.save_image = True
-
-    @staticmethod
-    def draw_faces(frame, faces):
-        """
-        draw rectangle around detected faces
-        Args:
-            frame:
-            faces:
-        """
-        for (top, right, bottom, left) in faces:
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-            cv2.rectangle(frame, (left, bottom - 1), (right, bottom), (0, 0, 255), cv2.FILLED)
 
     def cleanup(self):
         self.image_available_flag.set()

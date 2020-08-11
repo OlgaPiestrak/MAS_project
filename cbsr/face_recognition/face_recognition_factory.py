@@ -1,4 +1,4 @@
-from argparse import ArgumentParser
+from os import getenv
 from signal import pause, signal, SIGTERM, SIGINT
 from sys import exit
 from threading import Thread
@@ -9,14 +9,12 @@ from face_recognition_service import FaceRecognitionService
 
 
 class FaceRecognitionFactory(object):
-    def __init__(self, server, debug):
-        self.server = server
-        self.debug = debug
+    def __init__(self):
         self.active = {}
 
         # Redis initialization
-        self.redis = Redis(host=server, ssl=True, ssl_ca_certs='cert.pem', password='changemeplease')
-        print('Subscribing to ' + server + '...')
+        self.redis = self.connect()
+        print('Subscribing ...')
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe(**{'face_recognition': self.execute})
         self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)
@@ -26,6 +24,16 @@ class FaceRecognitionFactory(object):
         signal(SIGINT, self.cleanup)
         self.running = True
 
+    @staticmethod
+    def connect():
+        host = getenv('DB_IP')
+        password = getenv('DB_PASS')
+        self_signed = getenv('DB_SSL_SELFSIGNED')
+        if self_signed == '1':
+            return Redis(host=host, ssl=True, ssl_ca_certs='cert.pem', password=password)
+        else:
+            return Redis(host=host, ssl=True, password=password)
+
     def execute(self, message):
         t = Thread(target=self.start_service, args=(message['data'],))
         t.start()
@@ -34,8 +42,8 @@ class FaceRecognitionFactory(object):
         if data in self.active:
             print('Already running face recognition for ' + data)
         else:
-            recognition_service = FaceRecognitionService(server=self.server, identifier=data,
-                                                         disconnect=self.disconnect_service, debug=self.debug)
+            recognition_service = FaceRecognitionService(connect=self.connect, identifier=data,
+                                                         disconnect=self.disconnect_service)
             self.active[data] = recognition_service
 
     def disconnect_service(self, identifier):
@@ -61,11 +69,5 @@ class FaceRecognitionFactory(object):
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('--server', type=str, default='localhost', help='Server IP address')
-    parser.add_argument('--debug', action='store_true', default=False,
-                        help='Use this flag to enable several debug statements and drawings')
-    args = parser.parse_args()
-
-    face_recognition_factory = FaceRecognitionFactory(server=args.server, debug=args.debug)
+    face_recognition_factory = FaceRecognitionFactory()
     face_recognition_factory.run()

@@ -7,7 +7,6 @@ import numpy as np
 from PIL import Image
 from dlib import get_frontal_face_detector
 from imutils import face_utils, resize
-from redis import Redis
 # direct import from keras has a bug see: https://stackoverflow.com/a/59810484/3668659
 from tensorflow.python.keras.models import load_model
 
@@ -17,7 +16,8 @@ from utils.preprocessor import preprocess_input
 
 
 class EmotionDetectionService:
-    def __init__(self, server, identifier, disconnect):
+    def __init__(self, connect, identifier, disconnect):
+        self.redis = connect()
         self.identifier = identifier
         self.disconnect = disconnect
         # Image size (filled later)
@@ -40,8 +40,7 @@ class EmotionDetectionService:
         self.emotion_target_size = self.emotion_classifier.input_shape[1:3]
 
         # Redis initialization
-        self.redis = Redis(host=server, ssl=True, ssl_ca_certs='cert.pem', password='changemeplease')
-        print('Subscribing ' + identifier + ' to ' + server + '...')
+        print('Subscribing ' + identifier)
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe(**{identifier + '_events': self.execute,
                                  identifier + '_image_available': self.set_image_available})
