@@ -111,7 +111,7 @@ class Transformation(object):
             behavior = self.modify_flow_parameters(behavior, pivot_states)
             behavior = self.modify_time_parameters(behavior)
             behavior = self.modify_weight_parameters(behavior)
-            # behavior = self.modify_led_parameters(behavior)
+            behavior = self.modify_led_parameters(behavior)
 
         return behavior
 
@@ -199,6 +199,10 @@ class Transformation(object):
                 behavior[joint_name]['times'].append(time_increment * len(behavior[joint_name]['times']))
 
         speed = self.get_affective_speed()
+        # if speed > 1:
+        #    speed = 1 + (speed - 1) * 2
+        # else:
+        #    speed = 1 - (1 - speed) * 2
         for joint_name in behavior.keys():
             times = Series(behavior[joint_name]['times'])
             times = (times / speed).tolist()

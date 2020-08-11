@@ -235,12 +235,17 @@ class RobotConsumer(object):
             angles = []
             times = []
             for joint in motion.keys():
-                angl = motion[joint]['angles']
-                tms = motion[joint]['times']
+                if joint == 'LED':  # special case (from emotion transformation)
+                    self.leds.fadeRGB('FaceLeds', int(motion[joint]['colors'][0], 0), motion[joint]['times'][-1])
+                    continue
+
                 # To protect the robots hardware from incorrect commands, do extensive checks.
                 if joint not in self.all_joints:
                     print('Joint ' + str(joint) + ' not recognized.')
-                elif not angl or not tms:
+                    continue
+                angl = motion[joint]['angles']
+                tms = motion[joint]['times']
+                if not angl or not tms:
                     print('Joint ' + str(joint) + ' has no values')
                 elif len(angl) != len(tms):
                     print('The angle list size (' + str(len(angl)) + ') is not equal to ' +
