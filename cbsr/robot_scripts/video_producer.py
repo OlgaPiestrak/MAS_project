@@ -42,8 +42,8 @@ class VideoProcessingModule(object):
         self.identifier_thread = Thread(target=self.announce)
         self.identifier_thread.start()
 
-        possible_resolutions = {'0': [160, 120], '1': [320, 240], '2': [640, 480], '3': [1280, 960],
-                                '4': [2560, 1920], '7': [80, 60], '8': [40, 30]}
+        possible_resolutions = {0: [160, 120], 1: [320, 240], 2: [640, 480], 3: [1280, 960], 4: [2560, 1920],
+                                7: [80, 60], 8: [40, 30]}
         if str(resolution) in possible_resolutions.keys():
             self.resolution = resolution
             self.redis.set(self.identifier + '_image_size', str(possible_resolutions[str(resolution)][0]) + ' ' + str(
