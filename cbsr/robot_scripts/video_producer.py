@@ -44,10 +44,10 @@ class VideoProcessingModule(object):
 
         possible_resolutions = {0: [160, 120], 1: [320, 240], 2: [640, 480], 3: [1280, 960], 4: [2560, 1920],
                                 7: [80, 60], 8: [40, 30]}
-        if str(resolution) in possible_resolutions.keys():
+        if resolution in possible_resolutions.keys():
             self.resolution = resolution
-            self.redis.set(self.identifier + '_image_size', str(possible_resolutions[str(resolution)][0]) + ' ' + str(
-                possible_resolutions[str(resolution)][1]))
+            self.redis.set(self.identifier + '_image_size',
+                           str(possible_resolutions[resolution][0]) + ' ' + str(possible_resolutions[resolution][1]))
         else:
             raise ValueError(str(resolution) + ' is not a valid resolution')
 
