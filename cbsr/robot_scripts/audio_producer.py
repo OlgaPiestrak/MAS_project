@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from os.path import isfile
 from sys import exit
 from threading import Thread
 from time import sleep, time
@@ -26,7 +27,10 @@ class SoundProcessingModule(object):
         self.device = ''.join(mac[i: i + 2] for i in range(0, 11, 2))
         self.identifier = self.username + '-' + self.device
         print('Connecting ' + self.identifier + ' to ' + server + '...')
-        self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='../cert.pem')
+        if isfile('cert.pem'):
+            self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cert.pem')
+        else:
+            self.redis = Redis(host=server, username=username, password=password, ssl=True)
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe(**{self.identifier + '_action_audio': self.execute})
         self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)

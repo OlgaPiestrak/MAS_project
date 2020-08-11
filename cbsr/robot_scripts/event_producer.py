@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from functools import partial
+from os.path import isfile
 from sys import exit
 from threading import Thread
 from time import sleep, time
@@ -48,7 +49,10 @@ class EventProcessingModule(object):
         self.device = ''.join(mac[i: i + 2] for i in range(0, 11, 2))
         self.identifier = self.username + '-' + self.device
         print('Connecting ' + self.identifier + ' to ' + server + '...')
-        self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='../cert.pem')
+        if isfile('cert.pem'):
+            self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cert.pem')
+        else:
+            self.redis = Redis(host=server, username=username, password=password, ssl=True)
         self.identifier_thread = Thread(target=self.announce)
         self.identifier_thread.start()
 

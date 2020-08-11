@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from os.path import isfile
 from threading import Thread
 from time import sleep, time
 from uuid import getnode
@@ -54,7 +55,10 @@ class RobotConsumer(object):
         self.identifier = self.username + '-' + self.device
         self.cutoff = len(self.identifier) + 1
         print('Connecting ' + self.identifier + ' to ' + server + '...')
-        self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='../cert.pem')
+        if isfile('cert.pem'):
+            self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cert.pem')
+        else:
+            self.redis = Redis(host=server, username=username, password=password, ssl=True)
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe(**dict.fromkeys(((self.identifier + '_' + t) for t in topics), self.execute))
         self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)
