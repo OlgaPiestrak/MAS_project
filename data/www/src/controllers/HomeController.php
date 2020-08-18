@@ -51,7 +51,7 @@ class HomeController
 
         // LAN IP-address of user's device (required)
         if (! filter_var($myIp, FILTER_VALIDATE_IP)) {
-            return $response->withStatus(422, 'The IP-address for the robot is invalid.');
+            return $response->withStatus(422, 'The IP-address for your machine is invalid.');
         }
         $_SESSION['myIp'] = $myIp;
         if (empty($myUser)) {
