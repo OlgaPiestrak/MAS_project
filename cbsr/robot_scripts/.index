@@ -1,0 +1,10 @@
+https://bitbucket.org/socialroboticshub/docker/raw/HEAD/cbsr/robot_scripts/action_consumer.py
+https://bitbucket.org/socialroboticshub/docker/raw/HEAD/cbsr/robot_scripts/audio_consumer.py
+https://bitbucket.org/socialroboticshub/docker/raw/HEAD/cbsr/robot_scripts/audio_producer.py
+https://bitbucket.org/socialroboticshub/docker/raw/HEAD/cbsr/robot_scripts/event_producer.py
+https://bitbucket.org/socialroboticshub/docker/raw/HEAD/cbsr/robot_scripts/start.sh.template
+https://bitbucket.org/socialroboticshub/docker/raw/HEAD/cbsr/robot_scripts/stop.sh
+https://bitbucket.org/socialroboticshub/docker/raw/HEAD/cbsr/robot_scripts/tablet.py
+https://bitbucket.org/socialroboticshub/docker/raw/HEAD/cbsr/robot_scripts/tablet_consumer.py
+https://bitbucket.org/socialroboticshub/docker/raw/HEAD/cbsr/robot_scripts/transformation.py
+https://bitbucket.org/socialroboticshub/docker/raw/HEAD/cbsr/robot_scripts/video_producer.py
