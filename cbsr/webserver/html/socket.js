@@ -1,6 +1,6 @@
 var socket = null;
 $(function() {
-	socket = new WebSocket('wss://127.0.0.1:8001');
+	socket = new WebSocket('wss://' + window.location.hostname + ':8001');
 	socket.onopen = function() {
 		$(document.body).html('*');
 		socket.send(getParameter('id'));
@@ -65,8 +65,10 @@ function chatBox() {
 	var chatBox = $('.chatbox');
 	chatBox.html('<form><input type="text"><input type="submit"></form>');
 	chatBox.submit(function(e) {
-		var text = $('.chatbox input').first().val();
+		var input = $('.chatbox input').first();
+		var text = input.val();
 		socket.send('action_chat|'+text);
+		input.val('');
 		e.preventDefault();
 	});
 }

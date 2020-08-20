@@ -62,13 +62,10 @@ class HomeController
             return $response->withStatus(422, 'Please give your password.');
         }
         $_SESSION['myPass'] = $myPass;
-        echo "Creating configuration files using the given information...\n";
-		$path = '/opt/cbsr';
-        echo self::exec("cp -f $path/webserver/html/socket.js.template $path/webserver/html/socket.js && echo \"OK (1/4)\"");
-        echo self::exec("sed -i \"s/127.0.0.1/$myIp/\" $path/webserver/html/socket.js && echo \"OK (2/4)\"");
+        echo "Creating robot configuration files using the given information...\n";
 		$path .= '/robot_scripts';
-        echo self::exec("cp -f $path/start.sh.template $path/start.sh && echo \"OK (3/4)\"");
-        echo self::exec("sed -i -e 's/unknown1/$myIp/' -e 's/unknown2/$myUser/' -e 's/unknown3/$myPass/' $path/start.sh && echo \"OK (4/4)\"");
+        echo self::exec("cp -f $path/start.sh.template $path/start.sh && echo \"OK (1/2)\"");
+        echo self::exec("sed -i -e 's/unknown1/$myIp/' -e 's/unknown2/$myUser/' -e 's/unknown3/$myPass/' $path/start.sh && echo \"OK (2/2)\"");
 		self::exec("chmod +x $path/*.sh");
 
         // LAN IP-address of the Nao/Pepper (if used)
