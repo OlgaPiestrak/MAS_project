@@ -26,5 +26,10 @@ if __name__ == '__main__':
                                                                 'people_detection', 'face_recognition',
                                                                 'robot_memory'])
     pipe.acl_save()
-    print(pipe.execute())
+    result = pipe.execute()
     redis.close()
+
+    if result == [True, True]:
+        print('Registration completed!')
+    else:
+        print('Registration failed...')
