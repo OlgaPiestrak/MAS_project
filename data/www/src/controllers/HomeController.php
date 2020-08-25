@@ -51,7 +51,7 @@ class HomeController
      * @return string Output of the command.
      * @throws \Exception
      */
-    private static function exec($cmd, $timeout = 60)
+    private static function exec($cmd, $timeout = 10)
     {
         $descriptors = [
             [
