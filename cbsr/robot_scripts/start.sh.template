@@ -11,6 +11,8 @@ for f in *.pid; do
   fi
 done
 
+echo "Installing..."
+
 /usr/bin/pip install --user --upgrade pip
 ../.local/bin/pip install --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 pandas~=0.20
 
@@ -20,3 +22,5 @@ nohup python -u tablet_consumer.py --server "$SERVER" --username "$USER" --passw
 nohup python -u video_producer.py --server "$SERVER" --username "$USER" --password "$PASS" > video_producer.log 2>&1 & echo $! > video_producer.pid
 nohup python -u event_producer.py --server "$SERVER" --username "$USER" --password "$PASS" > event_producer.log 2>&1 & echo $! > event_producer.pid
 nohup python -u audio_producer.py --server "$SERVER" --username "$USER" --password "$PASS" > audio_producer.log 2>&1 & echo $! > audio_producer.pid
+
+echo "Done!"
