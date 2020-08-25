@@ -24,7 +24,7 @@ class HomeController
     public function signup(Request $request, Response $response, $args)
     {
         $params = $request->getParams();
-        $username = $params['newUser'] ?? '';
+        $username = trim($params['newUser'] ?? '');
         if (! ctype_alnum($username)) {
             return $response->withStatus(422, 'Please use only alphanumeric characters in the username.');
         }
