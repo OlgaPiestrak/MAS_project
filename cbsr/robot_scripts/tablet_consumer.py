@@ -2,7 +2,6 @@
 Redis consumer, runs on the robot.
 """
 from argparse import ArgumentParser
-from os.path import isfile
 from threading import Thread
 from time import sleep, time
 from uuid import getnode
@@ -29,10 +28,7 @@ class TabletConsumer(object):
         self.cutoff = len(self.identifier) + 1
         self.webcontent_uri = 'https://' + server + ':8000/index.html?id=' + self.identifier
         print('Connecting ' + self.identifier + ' to ' + server + '...')
-        if isfile('cert.pem'):
-            self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cert.pem')
-        else:
-            self.redis = Redis(host=server, username=username, password=password, ssl=True)
+        self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe(**dict.fromkeys(((self.identifier + '_' + t) for t in topics), self.execute))
         self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)

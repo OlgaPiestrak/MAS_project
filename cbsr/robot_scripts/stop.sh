@@ -9,3 +9,4 @@ cd "$(dirname "$0")"
 [ ! -f tablet_consumer.pid ] || pkill -F tablet_consumer.pid
 
 rm -f *.pid *.log
+echo "Disconnected!"
