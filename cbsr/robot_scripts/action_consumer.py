@@ -182,7 +182,9 @@ class RobotConsumer(object):
             speed = float(speed) / 100.0
             if speed < 0.01 or speed > 1.0:
                 raise ValueError('speed should be a value between 1 and 100')
+            self.produce('GoToPostureStarted')
             self.posture.goToPosture(target_posture, speed)
+            self.produce('GoToPostureDone')
         except ValueError as err:
             print('action_posture received incorrect input (' + err.message + '): ' + posture)
 
@@ -205,6 +207,7 @@ class RobotConsumer(object):
             chains = loads(chains)  # parse string json list to python list.
             if not (isinstance(chains, list)):
                 raise ValueError('Input parameter "joint chains" should be a list')
+            self.produce('SetStiffnessStarted')
             self.motion.stiffnessInterpolation(chains, stiffness, duration)
             self.produce('SetStiffnessDone')
         except ValueError as err:
@@ -300,6 +303,7 @@ class RobotConsumer(object):
                                    self.compress_motion(self.recorded_motion,
                                                         PRECISION_FACTOR_MOTION_ANGLES,
                                                         PRECISION_FACTOR_MOTION_TIMES))
+                self.produce('RecordMotionDone')
                 self.recorded_motion = {}
             else:
                 raise ValueError('Command for action_record_motion not recognized: ' + message)
