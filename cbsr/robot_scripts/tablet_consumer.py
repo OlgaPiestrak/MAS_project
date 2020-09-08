@@ -15,9 +15,10 @@ from tablet import Tablet
 class TabletConsumer(object):
     """Receives commands from Redis and executes them on the tablet"""
 
-    def __init__(self, app, server, username, password, topics):
+    def __init__(self, app, server, username, password, topics, profiling):
         app.start()
         self.username = username
+        self.profiling = profiling
         self.tablet = Tablet(app.session, server)
         self.running = True
 
@@ -105,6 +106,7 @@ if __name__ == '__main__':
     parser.add_argument('--server', type=str, help='Server IP address')
     parser.add_argument('--username', type=str, help='Username')
     parser.add_argument('--password', type=str, help='Password')
+    parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
 
     name = 'TabletConsumer'
@@ -112,7 +114,7 @@ if __name__ == '__main__':
         app = Application([name])
         tablet_consumer = TabletConsumer(app=app, server=args.server, username=args.username, password=args.password,
                                          topics=['tablet_control', 'tablet_audio', 'tablet_image', 'tablet_video',
-                                                 'tablet_web'])
+                                                 'tablet_web'], profiling=args.profile)
         # session_id = app.session.registerService(name, tablet_consumer)
         app.run()  # blocking
         tablet_consumer.cleanup()

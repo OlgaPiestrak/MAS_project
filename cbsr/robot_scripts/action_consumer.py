@@ -24,9 +24,10 @@ PRECISION_FACTOR_MOTION_TIMES = 100  # Time values require a decimal precision o
 
 
 class RobotConsumer(object):
-    def __init__(self, app, server, username, password, topics):
+    def __init__(self, app, server, username, password, topics, profiling):
         app.start()
         self.username = username
+        self.profiling = profiling
         self.animation = app.session.service('ALAnimationPlayer')
         self.leds = app.session.service('ALLeds')
         self.awareness = app.session.service('ALBasicAwareness')
@@ -519,6 +520,7 @@ if __name__ == '__main__':
     parser.add_argument('--server', type=str, help='Server IP address')
     parser.add_argument('--username', type=str, help='Username')
     parser.add_argument('--password', type=str, help='Password')
+    parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
 
     name = 'RobotConsumer'
@@ -529,7 +531,7 @@ if __name__ == '__main__':
                                                'action_headcolour', 'action_idle', 'action_turn', 'action_turn_small',
                                                'action_wakeup', 'action_rest', 'action_set_breathing', 'action_posture',
                                                'action_stiffness', 'action_play_motion', 'action_record_motion',
-                                               'action_motion_file'])
+                                               'action_motion_file'], profiling=args.profile)
         # session_id = app.session.registerService(name, robot_consumer)
         app.run()  # blocking
         robot_consumer.cleanup()

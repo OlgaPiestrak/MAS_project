@@ -10,9 +10,10 @@ from redis import Redis
 
 
 class EventProcessingModule(object):
-    def __init__(self, app, server, username, password):
+    def __init__(self, app, server, username, password, profiling):
         app.start()
         self.username = username
+        self.profiling = profiling
         self.memory_service = app.session.service('ALMemory')
         self.touch_sensors = {'RightBumperPressed': {'pressed': False, 'alt': 'RightBumperReleased'},
                               'LeftBumperPressed': {'pressed': False, 'alt': 'LeftBumperReleased'},
@@ -164,13 +165,14 @@ if __name__ == '__main__':
     parser.add_argument('--server', type=str, help='Server IP address')
     parser.add_argument('--username', type=str, help='Username')
     parser.add_argument('--password', type=str, help='Password')
+    parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
 
     name = 'EventProcessingModule'
     try:
         app = Application([name])
-        event_processing = EventProcessingModule(app=app, server=args.server,
-                                                 username=args.username, password=args.password)
+        event_processing = EventProcessingModule(app=app, server=args.server, username=args.username,
+                                                 password=args.password, profiling=args.profile)
         # session_id = app.session.registerService(name, event_processing)
         app.run()  # blocking
         event_processing.cleanup()

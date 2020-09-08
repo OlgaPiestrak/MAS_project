@@ -9,9 +9,10 @@ from redis import Redis
 
 
 class SoundProcessingModule(object):
-    def __init__(self, app, name, server, username, password):
+    def __init__(self, app, name, server, username, password, profiling):
         app.start()
         self.username = username
+        self.profiling = profiling
 
         # Get the service
         self.audio_service = app.session.service('ALAudioDevice')
@@ -110,13 +111,14 @@ if __name__ == '__main__':
     parser.add_argument('--server', type=str, help='Server IP address')
     parser.add_argument('--username', type=str, help='Username')
     parser.add_argument('--password', type=str, help='Password')
+    parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
 
     name = 'SoundProcessingModule'
     try:
         app = Application([name])
-        sound_processing = SoundProcessingModule(app=app, name=name, server=args.server,
-                                                 username=args.username, password=args.password)
+        sound_processing = SoundProcessingModule(app=app, name=name, server=args.server, username=args.username,
+                                                 password=args.password, profiling=args.profile)
         session_id = app.session.registerService(name, sound_processing)
         app.run()  # blocking
         sound_processing.cleanup()

@@ -9,11 +9,12 @@ from redis import Redis
 
 
 class VideoProcessingModule(object):
-    def __init__(self, app, name, server, username, password, resolution, colorspace, frame_ps):
+    def __init__(self, app, name, server, username, password, resolution, colorspace, frame_ps, profiling):
         app.start()
         self.username = username
         self.colorspace = colorspace
         self.frame_ps = frame_ps
+        self.profiling = profiling
         # The watching thread will poll the camera 2 times the frame rate to make sure it is not the bottleneck.
         self.polling_sleep = 1 / (self.frame_ps * 2)
 
@@ -131,6 +132,7 @@ if __name__ == '__main__':
     parser.add_argument('--resolution', type=int, default=2, help='Naoqi image resolution')
     parser.add_argument('--colorspace', type=int, default=11, help='Naoqi color channel')
     parser.add_argument('--frame_ps', type=int, default=20, help='Framerate at which images are generated')
+    parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
 
     name = 'VideoProcessingModule'
@@ -139,7 +141,7 @@ if __name__ == '__main__':
         video_processing = VideoProcessingModule(app=app, name=name, server=args.server,
                                                  username=args.username, password=args.password,
                                                  resolution=args.resolution, colorspace=args.colorspace,
-                                                 frame_ps=args.frame_ps)
+                                                 frame_ps=args.frame_ps, profiling=args.profile)
         # session_id = app.session.registerService(name, video_processing)
         app.run()  # blocking
         video_processing.cleanup()

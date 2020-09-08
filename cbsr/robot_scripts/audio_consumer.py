@@ -12,10 +12,11 @@ from redis import Redis
 
 
 class RobotAudio(object):
-    def __init__(self, app, server, username, password, topics):
+    def __init__(self, app, server, username, password, topics, profiling):
         app.start()
         self.server = server
         self.username = username
+        self.profiling = profiling
         self.tts = app.session.service('ALTextToSpeech')
         self.atts = app.session.service('ALAnimatedSpeech')
         self.language = app.session.service('ALDialog')
@@ -149,6 +150,7 @@ if __name__ == '__main__':
     parser.add_argument('--server', type=str, help='Server IP address')
     parser.add_argument('--username', type=str, help='Username')
     parser.add_argument('--password', type=str, help='Password')
+    parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
 
     name = 'RobotAudio'
@@ -157,7 +159,7 @@ if __name__ == '__main__':
         robot_audio = RobotAudio(app=app, server=args.server, username=args.username, password=args.password,
                                  topics=['action_say', 'action_say_animated', 'audio_language', 'action_play_audio',
                                          'action_load_audio', 'action_clear_audio', 'action_speech_param',
-                                         'action_stop_talking'])
+                                         'action_stop_talking'], profiling=args.profile)
         # session_id = app.session.registerService(name, robot_audio)
         app.run()  # blocking
         robot_audio.cleanup()
