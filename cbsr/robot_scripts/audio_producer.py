@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from queue import Queue
+from multiprocessing import Queue
 from sys import exit
 from threading import Thread
 from time import sleep, time
@@ -14,10 +14,6 @@ class SoundProcessingModule(object):
     def __init__(self, app, name, server, username, password, profiling):
         app.start()
         self.username = username
-        if profiling:
-            self.profiler_queue = Queue()
-            profiler_thread = Thread(target=self.profile)
-            profiler_thread.start()
 
         # Get the service
         self.audio_service = app.session.service('ALAudioDevice')
@@ -25,6 +21,11 @@ class SoundProcessingModule(object):
         self.index = -1
         self.is_robot_listening = False
         self.running = True
+
+        if profiling:
+            self.profiler_queue = Queue()
+            profiler_thread = Thread(target=self.profile)
+            profiler_thread.start()
 
         # Initialise Redis
         mac = hex(getnode()).replace('0x', '').upper()

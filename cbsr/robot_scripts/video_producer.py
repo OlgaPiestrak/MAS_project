@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from queue import Queue
+from multiprocessing import Queue
 from sys import exit
 from threading import Thread
 from time import sleep, time
@@ -16,10 +16,6 @@ class VideoProcessingModule(object):
         self.username = username
         self.colorspace = colorspace
         self.frame_ps = frame_ps
-        if profiling:
-            self.profiler_queue = Queue()
-            profiler_thread = Thread(target=self.profile)
-            profiler_thread.start()
         # The watching thread will poll the camera 2 times the frame rate to make sure it is not the bottleneck.
         self.polling_sleep = 1 / (self.frame_ps * 2)
 
@@ -30,6 +26,11 @@ class VideoProcessingModule(object):
         self.is_robot_watching = False
         self.subscriber_id = None
         self.running = True
+
+        if profiling:
+            self.profiler_queue = Queue()
+            profiler_thread = Thread(target=self.profile)
+            profiler_thread.start()
 
         # Initialise Redis
         mac = hex(getnode()).replace('0x', '').upper()
