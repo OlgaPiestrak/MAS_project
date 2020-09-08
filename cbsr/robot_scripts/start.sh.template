@@ -2,6 +2,7 @@
 SERVER=unknown1
 USER=unknown2
 PASS=unknown3
+EXTRA=unknown4
 
 cd "$(dirname "$0")"
 for f in *.pid; do
@@ -16,11 +17,11 @@ echo "Installing..."
 /usr/bin/pip install --user --upgrade pip
 ../.local/bin/pip install --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 pandas~=0.20
 
-nohup python -u action_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" > action_consumer.log 2>&1 & echo $! > action_consumer.pid
-nohup python -u audio_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" > audio_consumer.log 2>&1 & echo $! > audio_consumer.pid
-nohup python -u tablet_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" > tablet_consumer.log 2>&1 & echo $! > tablet_consumer.pid
-nohup python -u video_producer.py --server "$SERVER" --username "$USER" --password "$PASS" > video_producer.log 2>&1 & echo $! > video_producer.pid
-nohup python -u event_producer.py --server "$SERVER" --username "$USER" --password "$PASS" > event_producer.log 2>&1 & echo $! > event_producer.pid
-nohup python -u audio_producer.py --server "$SERVER" --username "$USER" --password "$PASS" > audio_producer.log 2>&1 & echo $! > audio_producer.pid
+nohup python -u action_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > action_consumer.log 2>&1 & echo $! > action_consumer.pid
+nohup python -u audio_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > audio_consumer.log 2>&1 & echo $! > audio_consumer.pid
+nohup python -u tablet_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > tablet_consumer.log 2>&1 & echo $! > tablet_consumer.pid
+nohup python -u video_producer.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > video_producer.log 2>&1 & echo $! > video_producer.pid
+nohup python -u event_producer.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > event_producer.log 2>&1 & echo $! > event_producer.pid
+nohup python -u audio_producer.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > audio_producer.log 2>&1 & echo $! > audio_producer.pid
 
 echo "Done!"
