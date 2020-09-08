@@ -31,6 +31,8 @@ class VideoProcessingModule(object):
             self.profiler_queue = Queue()
             profiler_thread = Thread(target=self.profile)
             profiler_thread.start()
+        else:
+            self.profiler_queue = None
 
         # Initialise Redis
         mac = hex(getnode()).replace('0x', '').upper()
@@ -126,7 +128,7 @@ class VideoProcessingModule(object):
     def profiling_end(self, label, start):
         if self.profiler_queue:
             diff = (default_timer() - start) * 1000
-            self.profiler_queue.put_nowait(label + ';' + str(diff))
+            self.profiler_queue.put_nowait(label + ';' + ('%.1f' % diff))
 
     def profile(self):
         while self.profiler_queue and self.running:
