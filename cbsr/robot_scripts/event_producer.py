@@ -50,8 +50,8 @@ class EventProcessingModule(object):
         self.identifier = self.username + '-' + self.device
         print('Connecting ' + self.identifier + ' to ' + server + '...')
         self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
-        self.identifier_thread = Thread(target=self.announce)
-        self.identifier_thread.start()
+        identifier_thread = Thread(target=self.announce)
+        identifier_thread.start()
 
     def announce(self):
         user = 'user:' + self.username
@@ -156,8 +156,8 @@ class EventProcessingModule(object):
         try:
             self.redis.close()
             print('Graceful exit was successful')
-        except Exception as err:
-            print('Graceful exit has failed: ' + err.message)
+        except Exception as exc:
+            print('Graceful exit has failed: ' + exc.message)
 
 
 if __name__ == '__main__':

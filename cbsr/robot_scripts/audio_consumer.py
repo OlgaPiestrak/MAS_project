@@ -1,5 +1,4 @@
 import os
-import ssl
 from argparse import ArgumentParser
 from shutil import rmtree
 from tempfile import NamedTemporaryFile
@@ -27,17 +26,6 @@ class RobotAudio(object):
         if not (os.path.exists(self.audio_folder)):
             os.mkdir(self.audio_folder)
 
-        # Ignores SSL certificate when using wget to download audio files from server over https
-        # https://community.netapp.com/t5/Software-Development-Kit-SDK-and-API-Discussions/Python-How-to-disable-SSL-certificate-verification/td-p/113697
-        try:  # noinspection PyProtectedMember
-            _create_unverified_https_context = ssl._create_unverified_context
-        except AttributeError:
-            # Legacy Python that doesn't verify HTTPS certificates by default
-            pass
-        else:
-            # Handle target environment that doesn't support HTTPS verification
-            ssl._create_default_https_context = _create_unverified_https_context
-
         self.running = True
 
         # Initialise Redis
@@ -47,11 +35,11 @@ class RobotAudio(object):
         self.cutoff = len(self.identifier) + 1
         print('Connecting ' + self.identifier + ' to ' + server + '...')
         self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
-        self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe(**dict.fromkeys(((self.identifier + '_' + t) for t in topics), self.execute))
-        self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)
-        self.identifier_thread = Thread(target=self.announce)
-        self.identifier_thread.start()
+        pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
+        pubsub.subscribe(**dict.fromkeys(((self.identifier + '_' + t) for t in topics), self.execute))
+        self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
+        identifier_thread = Thread(target=self.announce)
+        identifier_thread.start()
 
     def announce(self):
         user = 'user:' + self.username
@@ -141,8 +129,8 @@ class RobotAudio(object):
             self.pubsub_thread.stop()
             self.redis.close()
             print('Graceful exit was successful.')
-        except Exception as err:
-            print('Graceful exit has failed: ' + err.message)
+        except Exception as exc:
+            print('Graceful exit has failed: ' + exc.message)
 
 
 if __name__ == '__main__':

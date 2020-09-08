@@ -1,7 +1,9 @@
 from argparse import ArgumentParser
+from queue import Queue
 from sys import exit
 from threading import Thread
 from time import sleep, time
+from timeit import default_timer
 from uuid import getnode
 
 from qi import Application
@@ -14,7 +16,10 @@ class VideoProcessingModule(object):
         self.username = username
         self.colorspace = colorspace
         self.frame_ps = frame_ps
-        self.profiling = profiling
+        if profiling:
+            self.profiler_queue = Queue()
+            profiler_thread = Thread(target=self.profile)
+            profiler_thread.start()
         # The watching thread will poll the camera 2 times the frame rate to make sure it is not the bottleneck.
         self.polling_sleep = 1 / (self.frame_ps * 2)
 
@@ -24,7 +29,6 @@ class VideoProcessingModule(object):
         self.index = -1
         self.is_robot_watching = False
         self.subscriber_id = None
-        self.watching_thread = None
         self.running = True
 
         # Initialise Redis
@@ -33,11 +37,11 @@ class VideoProcessingModule(object):
         self.identifier = self.username + '-' + self.device
         print('Connecting ' + self.identifier + ' to ' + server + '...')
         self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
-        self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe(**{self.identifier + '_action_video': self.execute})
-        self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)
-        self.identifier_thread = Thread(target=self.announce)
-        self.identifier_thread.start()
+        pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
+        pubsub.subscribe(**{self.identifier + '_action_video': self.execute})
+        self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
+        identifier_thread = Thread(target=self.announce)
+        identifier_thread.start()
 
         possible_resolutions = {0: [160, 120], 1: [320, 240], 2: [640, 480], 3: [1280, 960], 4: [2560, 1920],
                                 7: [80, 60], 8: [40, 30]}
@@ -78,8 +82,8 @@ class VideoProcessingModule(object):
         self.subscriber_id = self.video_service.subscribeCamera(self.module_name, 0, self.resolution,
                                                                 self.colorspace, self.frame_ps)
         print('Subscribed, starting watching thread...')
-        self.watching_thread = Thread(target=self.watching, args=[self.subscriber_id])
-        self.watching_thread.start()
+        watching_thread = Thread(target=self.watching, args=[self.subscriber_id])
+        watching_thread.start()
 
         self.produce('WatchingStarted')
         # watch for N seconds (if not 0 i.e. infinite)
@@ -103,25 +107,44 @@ class VideoProcessingModule(object):
     def watching(self, subscriber_id):
         # start a loop until the stop signal is received
         while self.is_robot_watching:
+            get_remote_start = self.profiling_start()
             nao_image = self.video_service.getImageRemote(subscriber_id)
             if nao_image is not None:
+                self.profiling_end('GET_REMOTE', get_remote_start)
+                send_img_start = self.profiling_start()
                 pipe = self.redis.pipeline()
                 pipe.set(self.identifier + '_image_stream', bytes(nao_image[6]))
                 pipe.publish(self.identifier + '_image_available', '')
                 pipe.execute()
+                self.profiling_end('SEND_IMG', send_img_start)
             sleep(self.polling_sleep)
+
+    def profiling_start(self):
+        return default_timer() if self.profiler_queue else None
+
+    def profiling_end(self, label, start):
+        if self.profiler_queue:
+            diff = (default_timer() - start) * 1000
+            self.profiler_queue.put_nowait(label + ';' + str(diff))
+
+    def profile(self):
+        while self.profiler_queue and self.running:
+            item = self.profiler_queue.get()
+            print(item)  # TODO
 
     def cleanup(self):
         if self.is_robot_watching:
             self.stop_watching()
         self.running = False
+        if self.profiler_queue:
+            self.profiler_queue.put_nowait('END;')
         print('Trying to exit gracefully...')
         try:
             self.pubsub_thread.stop()
             self.redis.close()
             print('Graceful exit was successful')
-        except Exception as err:
-            print('Graceful exit has failed: ' + err.message)
+        except Exception as exc:
+            print('Graceful exit has failed: ' + exc.message)
 
 
 if __name__ == '__main__':

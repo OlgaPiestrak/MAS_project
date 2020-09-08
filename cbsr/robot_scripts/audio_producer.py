@@ -1,7 +1,9 @@
 from argparse import ArgumentParser
+from queue import Queue
 from sys import exit
 from threading import Thread
 from time import sleep, time
+from timeit import default_timer
 from uuid import getnode
 
 from qi import Application
@@ -12,11 +14,13 @@ class SoundProcessingModule(object):
     def __init__(self, app, name, server, username, password, profiling):
         app.start()
         self.username = username
-        self.profiling = profiling
+        if profiling:
+            self.profiler_queue = Queue()
+            profiler_thread = Thread(target=self.profile)
+            profiler_thread.start()
 
         # Get the service
         self.audio_service = app.session.service('ALAudioDevice')
-        # self.audio_service.enableEnergyComputation()
         self.module_name = name
         self.index = -1
         self.is_robot_listening = False
@@ -28,11 +32,11 @@ class SoundProcessingModule(object):
         self.identifier = self.username + '-' + self.device
         print('Connecting ' + self.identifier + ' to ' + server + '...')
         self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
-        self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe(**{self.identifier + '_action_audio': self.execute})
-        self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)
-        self.identifier_thread = Thread(target=self.announce)
-        self.identifier_thread.start()
+        pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
+        pubsub.subscribe(**{self.identifier + '_action_audio': self.execute})
+        self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
+        identifier_thread = Thread(target=self.announce)
+        identifier_thread.start()
 
     def announce(self):
         user = 'user:' + self.username
@@ -90,8 +94,23 @@ class SoundProcessingModule(object):
         self.is_robot_listening = False
 
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
-        self.redis.rpush(self.identifier + '_audio_stream', bytes(inputBuffer))
-        # self.pubsub.publish(self.identifier+'_audio_level', self.audio_service.getFrontMicEnergy())
+        audio = bytes(inputBuffer)
+        send_audio_start = self.profiling_start()
+        self.redis.rpush(self.identifier + '_audio_stream', audio)
+        self.profiling_end('SEND_AUDIO', send_audio_start)
+
+    def profiling_start(self):
+        return default_timer() if self.profiler_queue else None
+
+    def profiling_end(self, label, start):
+        if self.profiler_queue:
+            diff = (default_timer() - start) * 1000
+            self.profiler_queue.put_nowait(label + ';' + str(diff))
+
+    def profile(self):
+        while self.profiler_queue and self.running:
+            item = self.profiler_queue.get()
+            print(item)  # TODO
 
     def cleanup(self):
         if self.is_robot_listening:
@@ -102,8 +121,8 @@ class SoundProcessingModule(object):
             self.pubsub_thread.stop()
             self.redis.close()
             print('Graceful exit was successful')
-        except Exception as err:
-            print('Graceful exit has failed: ' + err.message)
+        except Exception as exc:
+            print('Graceful exit has failed: ' + exc.message)
 
 
 if __name__ == '__main__':

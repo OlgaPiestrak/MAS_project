@@ -56,11 +56,11 @@ class RobotConsumer(object):
         self.cutoff = len(self.identifier) + 1
         print('Connecting ' + self.identifier + ' to ' + server + '...')
         self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
-        self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe(**dict.fromkeys(((self.identifier + '_' + t) for t in topics), self.execute))
-        self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)
-        self.identifier_thread = Thread(target=self.announce)
-        self.identifier_thread.start()
+        pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
+        pubsub.subscribe(**dict.fromkeys(((self.identifier + '_' + t) for t in topics), self.execute))
+        self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
+        identifier_thread = Thread(target=self.announce)
+        identifier_thread.start()
 
     def announce(self):
         user = 'user:' + self.username
@@ -511,8 +511,8 @@ class RobotConsumer(object):
             self.pubsub_thread.stop()
             self.redis.close()
             print('Graceful exit was successful.')
-        except Exception as err:
-            print('Graceful exit has failed: ' + err.message)
+        except Exception as exc:
+            print('Graceful exit has failed: ' + exc.message)
 
 
 if __name__ == '__main__':
