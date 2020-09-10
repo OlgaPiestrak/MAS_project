@@ -13,7 +13,7 @@ class EmotionDetectionFactory(object):
         self.active = {}
 
         # Redis initialization
-        self.redis = self.connecT()
+        self.redis = self.connect()
         print('Subscribing...')
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.pubsub.subscribe(**{'emotion_detection': self.execute})
