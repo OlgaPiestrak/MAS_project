@@ -15,7 +15,6 @@ class RobotAudio(object):
         app.start()
         self.server = server
         self.username = username
-        self.profiling = profiling
         self.tts = app.session.service('ALTextToSpeech')
         self.atts = app.session.service('ALAnimatedSpeech')
         self.language = app.session.service('ALDialog')

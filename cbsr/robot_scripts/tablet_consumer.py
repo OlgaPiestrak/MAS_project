@@ -18,7 +18,6 @@ class TabletConsumer(object):
     def __init__(self, app, server, username, password, topics, profiling):
         app.start()
         self.username = username
-        self.profiling = profiling
         self.tablet = Tablet(app.session, server)
         self.running = True
 

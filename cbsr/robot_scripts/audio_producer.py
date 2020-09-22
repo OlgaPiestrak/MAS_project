@@ -35,6 +35,10 @@ class SoundProcessingModule(object):
         self.identifier = self.username + '-' + self.device
         print('Connecting ' + self.identifier + ' to ' + server + '...')
         self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
+        if profiling:
+            ping_start = self.profiling_start()
+            self.redis.ping()
+            self.profiling_end('PING', ping_start)
         pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         pubsub.subscribe(**{self.identifier + '_action_audio': self.execute})
         self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
@@ -119,6 +123,8 @@ class SoundProcessingModule(object):
         if self.is_robot_listening:
             self.stop_listening()
         self.running = False
+        if self.profiler_queue:
+            self.profiler_queue.put_nowait('END;')
         print('Trying to exit gracefully...')
         try:
             self.pubsub_thread.stop()

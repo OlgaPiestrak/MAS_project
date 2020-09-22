@@ -13,7 +13,6 @@ class EventProcessingModule(object):
     def __init__(self, app, server, username, password, profiling):
         app.start()
         self.username = username
-        self.profiling = profiling
         self.memory_service = app.session.service('ALMemory')
         self.touch_sensors = {'RightBumperPressed': {'pressed': False, 'alt': 'RightBumperReleased'},
                               'LeftBumperPressed': {'pressed': False, 'alt': 'LeftBumperReleased'},

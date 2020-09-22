@@ -27,7 +27,6 @@ class RobotConsumer(object):
     def __init__(self, app, server, username, password, topics, profiling):
         app.start()
         self.username = username
-        self.profiling = profiling
         self.animation = app.session.service('ALAnimationPlayer')
         self.leds = app.session.service('ALLeds')
         self.awareness = app.session.service('ALBasicAwareness')
@@ -211,8 +210,8 @@ class RobotConsumer(object):
             self.produce('SetStiffnessStarted')
             self.motion.stiffnessInterpolation(chains, stiffness, duration)
             self.produce('SetStiffnessDone')
-        except ValueError as err:
-            print('action_stiffness received incorrect input: ' + err.message)
+        except ValueError as valerr:
+            print('action_stiffness received incorrect input: ' + valerr.message)
 
     def process_action_play_motion(self, message, compressed=True):
         """
@@ -266,8 +265,8 @@ class RobotConsumer(object):
             # Play rest of the motion
             self.motion.angleInterpolation(joints, angles, times, True)
             self.produce('PlayMotionDone')
-        except ValueError as err:
-            print('action_play_motion received incorrect input: ' + err.message)
+        except ValueError as valerr:
+            print('action_play_motion received incorrect input: ' + valerr.message)
 
     def process_action_record_motion(self, message):
         """
@@ -308,8 +307,8 @@ class RobotConsumer(object):
                 self.recorded_motion = {}
             else:
                 raise ValueError('Command for action_record_motion not recognized: ' + message)
-        except ValueError as err:
-            print(err.message)
+        except ValueError as valerr:
+            print(valerr.message)
 
     def record_motion(self, joint_chains, framerate):
         """
