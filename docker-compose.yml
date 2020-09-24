@@ -68,6 +68,8 @@ services:
       - DEBUG_ENTRYPOINT=${DEBUG_COMPOSE_ENTRYPOINT}
       - DEBUG_COMPOSE_ENTRYPOINT
       - DOCKER_LOGS
+      # Tools
+      - COMPOSER_MEMORY_LIMIT=-1
       # UserID and GroupID
       - NEW_UID
       - NEW_GID
