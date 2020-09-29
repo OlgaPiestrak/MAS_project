@@ -63,7 +63,7 @@ function activateButtons() {
 }
 function chatBox() {
 	var chatBox = $('.chatbox');
-	chatBox.html('<form><input type="text"><input type="submit"></form>');
+	chatBox.html('<form><input type="text" autofocus class="w-25"><input type="submit"></form>');
 	chatBox.submit(function(e) {
 		var input = $('.chatbox input').first();
 		var text = input.val();
