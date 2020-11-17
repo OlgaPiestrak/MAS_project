@@ -23,6 +23,7 @@ class CBSRdevice(object):
         mac = hex(getnode()).replace('0x', '').upper()
         self.device = ''.join(mac[i: i + 2] for i in range(0, 11, 2))
         self.identifier = self.username + '-' + self.device
+        self.cutoff = len(self.identifier) + 1
         print('Connecting ' + self.identifier + ' to ' + server + '...')
         self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
         if profiling:
@@ -48,6 +49,9 @@ class CBSRdevice(object):
 
     def get_full_channel(self, channel_name):
         return self.identifier + '_' + channel_name
+
+    def get_channel_name(self, full_channel):
+        return full_channel[self.cutoff:]
 
     def announce(self):
         user = 'user:' + self.username

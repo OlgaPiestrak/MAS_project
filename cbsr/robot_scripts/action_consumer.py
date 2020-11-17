@@ -1,10 +1,9 @@
 from argparse import ArgumentParser
 from threading import Thread
-from time import sleep, time
-from uuid import getnode
+from time import sleep
 
+from cbsr.device import CBSRdevice
 from qi import Application
-from redis import Redis
 from simplejson import dumps, loads
 
 from transformation import Transformation
@@ -23,17 +22,15 @@ PRECISION_FACTOR_MOTION_ANGLES = 1000  # Angle values require a decimal precisio
 PRECISION_FACTOR_MOTION_TIMES = 100  # Time values require a decimal precision of at least 2 (giving a factor of 100)
 
 
-class RobotConsumer(object):
-    def __init__(self, app, server, username, password, topics, profiling):
-        app.start()
-        self.username = username
-        self.animation = app.session.service('ALAnimationPlayer')
-        self.leds = app.session.service('ALLeds')
-        self.awareness = app.session.service('ALBasicAwareness')
+class RobotConsumer(CBSRdevice):
+    def __init__(self, session, server, username, password, topics, profiling):
+        self.animation = session.service('ALAnimationPlayer')
+        self.leds = session.service('ALLeds')
+        self.awareness = session.service('ALBasicAwareness')
         self.awareness.setEngagementMode('FullyEngaged')
-        self.motion = app.session.service('ALMotion')
-        self.posture = app.session.service('ALRobotPosture')
-        self.memory = app.session.service('ALMemory')
+        self.motion = session.service('ALMotion')
+        self.posture = session.service('ALRobotPosture')
+        self.memory = session.service('ALMemory')
 
         # Get robot body type (nao or pepper)
         self.robot_type = self.memory.getData('RobotConfig/Body/Type').lower()
@@ -46,37 +43,21 @@ class RobotConsumer(object):
         self.record_motion_thread = None
         self.is_motion_recording = False
 
-        self.running = True
+        self.topics = topics
+        super(RobotConsumer, self).__init__(server, username, password, profiling)
 
-        # Initialise Redis
-        mac = hex(getnode()).replace('0x', '').upper()
-        self.device = ''.join(mac[i: i + 2] for i in range(0, 11, 2))
-        self.identifier = self.username + '-' + self.device
-        self.cutoff = len(self.identifier) + 1
-        print('Connecting ' + self.identifier + ' to ' + server + '...')
-        self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
-        pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        pubsub.subscribe(**dict.fromkeys(((self.identifier + '_' + t) for t in topics), self.execute))
-        self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
-        identifier_thread = Thread(target=self.announce)
-        identifier_thread.start()
+    def get_device_type(self):
+        return 'robot'
 
-    def announce(self):
-        user = 'user:' + self.username
-        device = self.device + ':robot'
-        while self.running:
-            self.redis.zadd(user, {device: time()})
-            sleep(59.9)
-
-    def produce(self, value):
-        self.redis.publish(self.identifier + '_events', value)
+    def get_channel_action_mapping(self):
+        return dict.fromkeys(((self.get_full_channel(t) for t in self.topics), self.execute))
 
     def execute(self, message):
         t = Thread(target=self.process_message, args=(message,))
         t.start()
 
     def process_message(self, message):
-        channel = message['channel'][self.cutoff:]
+        channel = self.get_channel_name(message['channel'])
         data = message['data']
         print(channel)
 
@@ -299,10 +280,10 @@ class RobotConsumer(object):
             elif message == 'stop':
                 self.is_motion_recording = False
                 self.record_motion_thread.join()
-                self.redis.publish(self.identifier + '_robot_motion_recording',
-                                   self.compress_motion(self.recorded_motion,
-                                                        PRECISION_FACTOR_MOTION_ANGLES,
-                                                        PRECISION_FACTOR_MOTION_TIMES))
+                self.publish('robot_motion_recording',
+                             self.compress_motion(self.recorded_motion,
+                                                  PRECISION_FACTOR_MOTION_ANGLES,
+                                                  PRECISION_FACTOR_MOTION_TIMES))
                 self.produce('RecordMotionDone')
                 self.recorded_motion = {}
             else:
@@ -503,16 +484,6 @@ class RobotConsumer(object):
         elif value:
             self.leds.fadeRGB(type, value, 0.1)
 
-    def cleanup(self):
-        self.running = False
-        print('Trying to exit gracefully...')
-        try:
-            self.pubsub_thread.stop()
-            self.redis.close()
-            print('Graceful exit was successful.')
-        except Exception as exc:
-            print('Graceful exit has failed: ' + exc.message)
-
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -522,10 +493,12 @@ if __name__ == '__main__':
     parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
 
-    name = 'RobotConsumer'
+    my_name = 'RobotConsumer'
     try:
-        app = Application([name])
-        robot_consumer = RobotConsumer(app=app, server=args.server, username=args.username, password=args.password,
+        app = Application([my_name])
+        app.start()  # initialise
+        robot_consumer = RobotConsumer(session=app.session, server=args.server, username=args.username,
+                                       password=args.password,
                                        topics=['action_gesture', 'action_eyecolour', 'action_earcolour',
                                                'action_headcolour', 'action_idle', 'action_turn', 'action_turn_small',
                                                'action_wakeup', 'action_rest', 'action_set_breathing', 'action_posture',
