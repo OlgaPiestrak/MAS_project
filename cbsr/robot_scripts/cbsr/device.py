@@ -29,17 +29,19 @@ class CBSRdevice(object):
             ping_start = self.profiling_start()
             self.redis.ping()
             self.profiling_end('PING', ping_start)
-        pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        pubsub.subscribe(**self.get_channel_action_mapping())
-        self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
+        mapping = self.get_channel_action_mapping()
+        if mapping:
+            pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
+            pubsub.subscribe(**mapping)
+            self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
         identifier_thread = Thread(target=self.announce)
         identifier_thread.start()
 
     def get_device_type(self):
-        pass  # TO IMPLEMENT
+        return None  # TO IMPLEMENT
 
     def get_channel_action_mapping(self):
-        pass  # TO IMPLEMENT
+        return {}  # TO IMPLEMENT
 
     def cleanup(self):
         pass  # TO IMPLEMENT

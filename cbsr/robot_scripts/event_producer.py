@@ -42,12 +42,6 @@ class EventProcessingModule(CBSRdevice):
     def get_device_type(self):
         return 'robot'
 
-    def get_channel_action_mapping(self):
-        return {}
-
-    def cleanup(self):
-        pass  # nothing to do here
-
     def add_event(self, event, callback):
         subscriber = self.memory_service.subscriber(event)
         self.events[event] = {'subscriber': subscriber,

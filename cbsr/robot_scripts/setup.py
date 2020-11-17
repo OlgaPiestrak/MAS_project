@@ -6,4 +6,5 @@ setup(
   author='Vincent Koeman',
   author_email='v.j.koeman@vu.nl',
   packages=['cbsr'],
+  install_requires=['redis~=3.5'],
 )
