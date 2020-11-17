@@ -21,7 +21,7 @@ class TabletConsumer(CBSRdevice):
         return 'tablet'
 
     def get_channel_action_mapping(self):
-        return dict.fromkeys(((self.get_full_channel(t) for t in self.topics), self.execute))
+        return dict.fromkeys((self.get_full_channel(t) for t in self.topics), self.execute)
 
     # We need this many if statements to handle the different types of commands.
     def execute(self, message):

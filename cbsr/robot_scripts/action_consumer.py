@@ -50,7 +50,7 @@ class RobotConsumer(CBSRdevice):
         return 'robot'
 
     def get_channel_action_mapping(self):
-        return dict.fromkeys(((self.get_full_channel(t) for t in self.topics), self.execute))
+        return dict.fromkeys((self.get_full_channel(t) for t in self.topics), self.execute)
 
     def execute(self, message):
         t = Thread(target=self.process_message, args=(message,))
