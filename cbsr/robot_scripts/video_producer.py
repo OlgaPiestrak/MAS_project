@@ -36,7 +36,7 @@ class VideoProcessingModule(CBSRdevice):
         return 'cam'
 
     def get_channel_action_mapping(self):
-        return {self.get_full_channel('action_audio'): self.execute}
+        return {self.get_full_channel('action_video'): self.execute}
 
     def cleanup(self):
         if self.is_robot_watching:
