@@ -121,7 +121,7 @@ if __name__ == '__main__':
                                                  frame_ps=args.frame_ps, profiling=args.profile)
         # session_id = app.session.registerService(name, video_processing)
         app.run()  # blocking
-        video_processing.cleanup()
+        video_processing.shutdown()
         # app.session.unregisterService(session_id)
     except Exception as err:
         print('Cannot connect to Naoqi: ' + err.message)

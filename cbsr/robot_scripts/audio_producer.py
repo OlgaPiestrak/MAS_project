@@ -95,7 +95,7 @@ if __name__ == '__main__':
                                                  password=args.password, profiling=args.profile)
         session_id = app.session.registerService(my_name, sound_processing)
         app.run()  # blocking
-        sound_processing.cleanup()
+        sound_processing.shutdown()
         app.session.unregisterService(session_id)
     except Exception as err:
         print('Cannot connect to Naoqi: ' + err.message)

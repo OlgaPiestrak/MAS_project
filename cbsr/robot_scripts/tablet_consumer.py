@@ -89,7 +89,7 @@ if __name__ == '__main__':
                                                  'tablet_web'], profiling=args.profile)
         # session_id = app.session.registerService(name, tablet_consumer)
         app.run()  # blocking
-        tablet_consumer.cleanup()
+        tablet_consumer.shutdown()
         # app.session.unregisterService(session_id)
     except Exception as err:
         print('Cannot connect to Naoqi: ' + err.message)

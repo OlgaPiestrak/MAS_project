@@ -86,7 +86,8 @@ class CBSRdevice(object):
             self.profiler_queue.put_nowait('END;')
         print('Trying to exit gracefully...')
         try:
-            self.pubsub_thread.stop()
+            if self.pubsub_thread:
+                self.pubsub_thread.stop()
             self.redis.close()
             print('Graceful exit was successful')
         except Exception as exc:

@@ -120,7 +120,7 @@ if __name__ == '__main__':
                                          'action_stop_talking'], profiling=args.profile)
         # session_id = app.session.registerService(name, robot_audio)
         app.run()  # blocking
-        robot_audio.cleanup()
+        robot_audio.shutdown()
         # app.session.unregisterService(session_id)
     except Exception as err:
         print('Cannot connect to Naoqi: ' + err.message)

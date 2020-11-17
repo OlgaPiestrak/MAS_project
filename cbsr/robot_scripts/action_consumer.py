@@ -506,7 +506,7 @@ if __name__ == '__main__':
                                                'action_motion_file'], profiling=args.profile)
         # session_id = app.session.registerService(name, robot_consumer)
         app.run()  # blocking
-        robot_consumer.cleanup()
+        robot_consumer.shutdown()
         # app.session.unregisterService(session_id)
     except Exception as err:
         print('Cannot connect to Naoqi: ' + err.message)

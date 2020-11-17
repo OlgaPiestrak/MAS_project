@@ -146,7 +146,7 @@ if __name__ == '__main__':
                                                  password=args.password, profiling=args.profile)
         # session_id = app.session.registerService(name, event_processing)
         app.run()  # blocking
-        event_processing.cleanup()
+        event_processing.shutdown()
         # app.session.unregisterService(session_id)
     except Exception as err:
         print('Cannot connect to Naoqi: ' + err.message)
