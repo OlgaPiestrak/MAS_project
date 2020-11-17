@@ -1,59 +1,30 @@
 from argparse import ArgumentParser
-from multiprocessing import Queue
 from sys import exit
 from threading import Thread
-from time import sleep, time
-from timeit import default_timer
-from uuid import getnode
+from time import sleep
 
+from cbsr.device import CBSRdevice
 from qi import Application
-from redis import Redis
 
 
-class SoundProcessingModule(object):
-    def __init__(self, app, name, server, username, password, profiling):
-        app.start()
-        self.username = username
-
-        # Get the service
-        self.audio_service = app.session.service('ALAudioDevice')
+class SoundProcessingModule(CBSRdevice):
+    def __init__(self, session, name, server, username, password, profiling):
+        self.audio_service = session.service('ALAudioDevice')
         self.module_name = name
         self.index = -1
         self.is_robot_listening = False
-        self.running = True
 
-        if profiling:
-            self.profiler_queue = Queue()
-            profiler_thread = Thread(target=self.profile)
-            profiler_thread.start()
-        else:
-            self.profiler_queue = None
+        super(SoundProcessingModule, self).__init__(server, username, password, profiling)
 
-        # Initialise Redis
-        mac = hex(getnode()).replace('0x', '').upper()
-        self.device = ''.join(mac[i: i + 2] for i in range(0, 11, 2))
-        self.identifier = self.username + '-' + self.device
-        print('Connecting ' + self.identifier + ' to ' + server + '...')
-        self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
-        if profiling:
-            ping_start = self.profiling_start()
-            self.redis.ping()
-            self.profiling_end('PING', ping_start)
-        pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        pubsub.subscribe(**{self.identifier + '_action_audio': self.execute})
-        self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
-        identifier_thread = Thread(target=self.announce)
-        identifier_thread.start()
+    def get_device_type(self):
+        return 'mic'
 
-    def announce(self):
-        user = 'user:' + self.username
-        device = self.device + ':mic'
-        while self.running:
-            self.redis.zadd(user, {device: time()})
-            sleep(59.9)
+    def get_channel_action_mapping(self):
+        return {self.get_full_channel('action_audio'): self.execute}
 
-    def produce(self, value):
-        self.redis.publish(self.identifier + '_events', value)
+    def cleanup(self):
+        if self.is_robot_listening:
+            self.stop_listening()
 
     def execute(self, message):
         data = float(message['data'])  # only subscribed to 1 topic
@@ -73,7 +44,7 @@ class SoundProcessingModule(object):
         self.is_robot_listening = True
 
         # clear any previously stored audio
-        self.redis.delete(self.identifier + '_audio_stream')
+        self.redis.delete(self.get_full_channel('audio_stream'))
 
         # ask for the front microphone signal sampled at 16kHz and subscribe to the module
         self.audio_service.setClientPreferences(self.module_name, 16000, 3, 0)
@@ -88,9 +59,9 @@ class SoundProcessingModule(object):
             t = Thread(target=self.wait, args=(seconds, self.index))
             t.start()
 
-    def wait(self, seconds, myIndex):
+    def wait(self, seconds, my_index):
         sleep(seconds)
-        if self.is_robot_listening and self.index == myIndex:
+        if self.is_robot_listening and self.index == my_index:
             self.stop_listening()
 
     def stop_listening(self):
@@ -103,35 +74,8 @@ class SoundProcessingModule(object):
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
         audio = bytes(inputBuffer)
         send_audio_start = self.profiling_start()
-        self.redis.rpush(self.identifier + '_audio_stream', audio)
+        self.redis.rpush(self.get_full_channel('audio_stream'), audio)
         self.profiling_end('SEND_AUDIO', send_audio_start)
-
-    def profiling_start(self):
-        return default_timer() if self.profiler_queue else None
-
-    def profiling_end(self, label, start):
-        if self.profiler_queue:
-            diff = (default_timer() - start) * 1000
-            self.profiler_queue.put_nowait(label + ';' + ('%.1f' % diff))
-
-    def profile(self):
-        while self.profiler_queue and self.running:
-            item = self.profiler_queue.get()
-            print(item)  # TODO
-
-    def cleanup(self):
-        if self.is_robot_listening:
-            self.stop_listening()
-        self.running = False
-        if self.profiler_queue:
-            self.profiler_queue.put_nowait('END;')
-        print('Trying to exit gracefully...')
-        try:
-            self.pubsub_thread.stop()
-            self.redis.close()
-            print('Graceful exit was successful')
-        except Exception as exc:
-            print('Graceful exit has failed: ' + exc.message)
 
 
 if __name__ == '__main__':
@@ -142,12 +86,14 @@ if __name__ == '__main__':
     parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
 
-    name = 'SoundProcessingModule'
+    my_name = 'SoundProcessingModule'
     try:
-        app = Application([name])
-        sound_processing = SoundProcessingModule(app=app, name=name, server=args.server, username=args.username,
+        app = Application([my_name])
+        app.start()  # initialise
+        sound_processing = SoundProcessingModule(session=app.session, name=my_name, server=args.server,
+                                                 username=args.username,
                                                  password=args.password, profiling=args.profile)
-        session_id = app.session.registerService(name, sound_processing)
+        session_id = app.session.registerService(my_name, sound_processing)
         app.run()  # blocking
         sound_processing.cleanup()
         app.session.unregisterService(session_id)
