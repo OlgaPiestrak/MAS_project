@@ -6,8 +6,7 @@ use controllers\HomeController;
 
 return function (App $app) {
     $app->get('/', HomeController::class . ':home');
-    $app->post('/settings', HomeController::class . ':settings');
-    $app->get('/robot_logs', HomeController::class . ':robotLogs');
-    $app->post('/robot_disconnect', HomeController::class . ':robotDisconnect');
+    $app->get('/devices', HomeController::class . ':get_devices');
+    $app->post('/devices', HomeController::class . ':set_devices');
     $app->post('/signup', HomeController::class . ':signup');
 };

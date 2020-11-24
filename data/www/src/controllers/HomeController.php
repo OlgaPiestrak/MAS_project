@@ -20,6 +20,17 @@ class HomeController
     {
         return $this->container->get('renderer')->render($response, 'index.phtml', $args);
     }
+    
+    public function get_devices(Request $request, Response $response, $args)
+    {
+        $dir = __DIR__;
+        echo self::exec("python2 -u $dir/get_devices.py");
+    }
+    
+    public  function set_devices(Request $request, Response $response, $args)
+    {
+        $_SESSION['devices'] = $request->getParams();
+    }
 
     public function signup(Request $request, Response $response, $args)
     {
@@ -31,7 +42,7 @@ class HomeController
         if (strlen($username) < 4) {
             return $response->withStatus(422, 'Please use at least 4 characters in the username.');
         }
-        $password = $params['newPass'] ?? '';
+        $password = trim($params['newPass'] ?? '');
         if (strlen($password) < 8) {
             return $response->withStatus(422, 'Please use at least 8 characters in the password.');
         }

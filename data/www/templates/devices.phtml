@@ -1,0 +1,28 @@
+<script type="text/javascript">
+$(function () {
+    $.get('devices', [], function(response) {
+        var devices = response.split("\n");
+        var form = '<fieldset>';
+        $.each(devices, function(i,device) {
+            if (device) {
+                form += '<div class="form-group">';
+    			form += '<input type="checkbox" class="form-check-input" name="devices" value="'+device+'">';
+    			form += device;
+    			form += '</div>';
+            }
+        });
+        form += '<button type="submit" class="btn btn-primary">Select</button>';
+        form += '</fieldset>';
+        $('#deviceForm').html(form);
+    });
+    $('#deviceForm').on('submit', function() {
+        $.post('devices', $(this).serialize(),
+                function(response){$('#popupContent').html('<pre>'+response+'</pre>');$('#popup').modal();});
+        return false;
+    });
+});
+</script>
+<h3>Connected Devices</h3>
+<form id="deviceForm" class="mt-4">
+	
+</form>
