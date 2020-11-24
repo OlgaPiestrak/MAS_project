@@ -3,6 +3,7 @@ $(function () {
     $.get('devices', [], function(response) {
         var devices = response.split("\n");
         var form = '<fieldset>';
+        form += '<div class="form-group"><input type="checkbox" class="form-check-input" id="select-all"></div>';
         $.each(devices, function(i,device) {
             if (device) {
                 form += '<div class="form-group">';
@@ -14,10 +15,12 @@ $(function () {
         form += '<button type="submit" class="btn btn-primary">Select</button>';
         form += '</fieldset>';
         $('#deviceForm').html(form);
+        $('#select-all').on('click', function() {
+        	$('#deviceForm input[type="checkbox"]').prop('checked', this.checked)
+        });
     });
     $('#deviceForm').on('submit', function() {
-        $.post('devices', $(this).serialize(),
-                function(response){$('#popupContent').html('<pre>'+response+'</pre>');$('#popup').modal();});
+        $.post('devices', $(this).serialize());
         return false;
     });
 });
