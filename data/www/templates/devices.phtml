@@ -1,4 +1,6 @@
 <script type="text/javascript">
+var username = 'default';
+var devices = [];
 $(function () {
     $.get('devices', [], function(response) {
         var devices = response.split("\n");
@@ -7,7 +9,7 @@ $(function () {
         $.each(devices, function(i,device) {
             if (device) {
                 form += '<div class="form-group">';
-    			form += '<input type="checkbox" class="form-check-input" name="devices" value="'+device+'">';
+    			form += '<input type="checkbox" class="form-check-input" name="devices[]" value="'+device+'">';
     			form += device;
     			form += '</div>';
             }
@@ -16,16 +18,14 @@ $(function () {
         form += '</fieldset>';
         $('#deviceForm').html(form);
         $('#select-all').on('click', function() {
-        	$('#deviceForm input[type="checkbox"]').prop('checked', this.checked)
+        	$('#deviceForm input:checkbox').prop('checked', this.checked)
         });
     });
     $('#deviceForm').on('submit', function() {
-        $.post('devices', $(this).serialize());
+        $.post('devices', $(this).serialize(), function(response){devices=JSON.parse(response);});
         return false;
     });
 });
 </script>
-<h3>Connected Devices</h3>
-<form id="deviceForm" class="mt-4">
-	
-</form>
+<h3>Devices</h3>
+<form id="deviceForm" class="mt-4"></form>
