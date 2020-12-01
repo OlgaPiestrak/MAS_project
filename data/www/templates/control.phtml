@@ -17,6 +17,25 @@ $(function () {
         form.trigger('reset');
         return false;
     });
+    var allGestures = {};
+    $.getJSON('gestures.json', function(data) {
+		allGestures = data;
+    });
+    $('#animForm').on('submit', function() {
+        var popup = $('#popup');
+        var content = $('#popupContent');
+        $.each(allGestures, function(name,value) {
+			content.append('<button type="submit" value="'+value+'" class="btn btn-primary ml-1">'+name+'</button>');
+        });
+        $('#popupContent').on('click', ':submit', function() {
+            var anim = $(this).val();
+        	$.post('command', {id:(username+'-'+devices['robot']), cmd:'action_gesture', data:anim});
+        	popup.modal('hide');
+        	content.empty();
+        });
+    	popup.modal('show');
+		return false;
+    });
 });
 </script>
 <h3>Control</h3>
@@ -25,8 +44,11 @@ $(function () {
   	<button id="startFeed" type="submit" class="btn btn-primary ml-1">Start watching</button>
   	<button id="stopFeed" type="submit" class="btn btn-primary ml-1">Stop watching</button>
 </div>
-<form id="sayForm" class="form-inline">
+<form id="sayForm" class="form-inline mb-3">
 	<div class="form-group"><input type="text" class="form-control" name="say"></div>
   	<button type="submit" value="say" class="btn btn-primary ml-1">Say</button>
-  	<button type="submit" value="say_animated" class="btn btn-primary ml-1">Say (Anim)</button>
+  	<button type="submit" value="say_animated" class="btn btn-primary ml-1">Say (anim)</button>
+</form>
+<form id="animForm" class="form-inline mb-3">
+  	<button type="submit" class="btn btn-primary ml-1">Gesture</button>
 </form>
