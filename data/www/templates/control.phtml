@@ -10,9 +10,11 @@ $(function () {
         $.post('stop_feed', {id:(username+'-'+devices['cam'])});
     });
     $('#sayForm').on('click', ':submit', function() {
+        var form = $('#sayForm');
         var name = $(this).val();
-        var data = $('#sayForm').serializeArray();
+        var data = form.serializeArray();
         $.post('command', {id:(username+'-'+devices['speaker']), cmd:('action_'+name), data:(data[0].value)});
+        form.trigger('reset');
         return false;
     });
 });
