@@ -52,14 +52,35 @@ class HomeController
             echo self::exec("python2 -u $dir/feed.py --identifier $identifier --command start");
         }
     }
-
+    
     public function stop_feed(Request $request, Response $response, $args)
     {
         $params = $request->getParams();
         $identifier = $params['id'] ?? '';
-        if (! empty($identifier)) {
+        if (empty($identifier)) {
+            return $response->withStatus(422, 'Please select a camera device first.');
+        } else {
             $dir = __DIR__;
             echo self::exec("python2 -u $dir/feed.py --identifier $identifier --command stop");
+        }
+    }
+    
+
+    public function command(Request $request, Response $response, $args)
+    {
+        $params = $request->getParams();
+        $identifier = $params['id'] ?? '';
+        if (empty($identifier)) {
+            return $response->withStatus(422, 'No suitable target device found.');
+        } else {
+            $cmd = $params['cmd'] ?? '';
+            if (empty($cmd)) {
+                return $response->withStatus(422, 'No actual command given.');                
+            } else {
+                $data = $params['data'] ?? '';
+                $dir = __DIR__;
+                echo self::exec("python2 -u $dir/commands.py --identifier $identifier --command $cmd --data \"$data\"");
+            }
         }
     }
 
