@@ -5,18 +5,37 @@ $(function () {
 		if(files.length < 1) {
 			return false;
 		}
+		var file = files.item(0);
+		$('#customFileLabel').html(file.name);
 		var fr = new FileReader();
-		fr.onload = function(e) { 
+		fr.onload = function(e) {
 			var config = JSON.parse(e.target.result);
-			console.log(config);
+			var favs = $('#favs');
+			favs.off();
+			favs.empty();
+			$.each(config, function(i,button) {
+				var id = 'fav'+i;
+				var html = '<button type="submit" class="btn btn-primary ml-1 mb-1" id="'+id+'">'+button.name+'</button>';
+				favs.append(html);
+				$('#'+id).on('click', function() {
+					var type = 'robot';
+					if(button.action.startsWith('action_say')) {
+						type = 'speaker';
+					} else if(button.action.startsWith('tablet')) {
+						type = 'tablet';
+					}
+					$.post('command', {id:(username+'-'+devices[type]), cmd:button.action, data:button.data});
+				});
+			});
 		}
-		fr.readAsText(files.item(0));
+		fr.readAsText(file);
+		$(this).val(null);
 	});
 });
 </script>
 <h3>Favourites</h3>
 <div class="custom-file mb-3">
   <input type="file" class="custom-file-input" id="customFile" accept=".json">
-  <label class="custom-file-label" for="customFile">Config</label>
+  <label class="custom-file-label" for="customFile" id="customFileLabel">Config</label>
 </div>
 <div id="favs" class="form-inline"></div>
