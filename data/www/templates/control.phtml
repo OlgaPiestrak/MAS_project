@@ -31,7 +31,7 @@ $(function () {
     $.getJSON('gestures.json', function(data) {
 		allGestures = data;
     });
-    $('#animForm').on('submit', function() {
+    $('#gesture').on('click', function() {
         var popup = $('#popup');
         var content = $('#popupContent');
         $.each(allGestures, function(name,value) {
@@ -47,11 +47,10 @@ $(function () {
             content.empty();
         });
     	popup.modal('show');
-		return false;
     });
     var allColours = {'White':'#FFFFFF', 'Red':'#FF0000', 'Green':'#008000', 
     	    'Blue':'#0000FF', 'Yellow':'#FFFF00', 'Magenta':'#FF00FF', 'Cyan':'#00FFFF'};
-    $('#eyeForm').on('submit', function() {
+    $('#eyeColour').on('click', function() {
         var popup = $('#popup');
         var content = $('#popupContent');
         $.each(allColours, function(name,code) {
@@ -67,23 +66,20 @@ $(function () {
             content.empty();
         });
     	popup.modal('show');
-		return false;
     });
 });
 </script>
 <h3>Control</h3>
-<form id="eyeForm" class="float-right">
-  	<button type="submit" class="btn btn-primary ml-1">Eye Colour</button>
-</form>
-<div id="feedForm" class="form-inline mb-3">
-	<img id="feed" class="w-100 mb-3">
+<div class="form-inline w-100 mb-3">
+	<img id="feed" class="mb-3">
   	<button id="startFeed" type="submit" class="btn btn-primary ml-1">Start watching</button>
   	<button id="stopFeed" type="submit" class="btn btn-primary ml-1">Stop watching</button>
   	<button id="toggleIdle" type="submit" class="btn btn-primary ml-1">Toggle idle</button>
+  	<button id="eyeColour" type="submit" class="btn btn-primary ml-auto">Eye Colour</button>
 </div>
-<form id="animForm" class="float-right">
-  	<button type="submit" class="btn btn-primary ml-1">Gesture</button>
-</form>
+<div class="float-right">
+  	<button id="gesture" type="submit" class="btn btn-primary">Gesture</button>
+</div>
 <form id="sayForm" class="form-inline mb-3">
 	<div class="form-group"><input type="text" class="form-control" name="say"></div>
   	<button type="submit" value="say" class="btn btn-primary ml-1">Say</button>
