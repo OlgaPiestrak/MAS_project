@@ -23,6 +23,7 @@ $(function () {
 						type = 'speaker';
 					} else if(button.action.startsWith('tablet')) {
 						type = 'tablet';
+						tabletOpen = false;
 					}
 					$.post('command', {id:(username+'-'+devices[type]), cmd:button.action, data:button.data});
 				});
