@@ -63,13 +63,13 @@ $(function () {
         });
     	popup.modal('show');
     });
-    var allColours = {'White':'#FFFFFF', 'Red':'#FF0000', 'Green':'#008000', 
-    	    'Blue':'#0000FF', 'Yellow':'#FFFF00', 'Magenta':'#FF00FF', 'Cyan':'#00FFFF'};
+    var allColours = {'White':'FFFFFF', 'Red':'FF0000', 'Green':'008000', 'Blue':'0000FF', 'Yellow':'FFFF00', 
+    	    'Magenta':'FF00FF', 'Cyan':'00FFFF', 'GreenYellow':'ADFF2F', 'Rainbow':'FFFFFF'};
     $('#eyeColour').on('click', function() {
         var popup = $('#popup');
         var content = $('#popupContent');
         $.each(allColours, function(name,hex) {
-			content.append('<button type="submit" value="'+name+'" class="btn btn-primary ml-1 mb-1" style="color:#202020;background-color:'+hex+';">'+name+'</button>');
+			content.append('<button type="submit" value="'+name+'" class="btn btn-primary ml-1 mb-1" style="color:#202020;background-color:#'+hex+';">'+name+'</button>');
         });
         content.on('click', ':submit', function() {
             var colour = $(this).val().toLowerCase();
