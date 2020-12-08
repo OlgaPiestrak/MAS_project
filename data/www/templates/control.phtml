@@ -1,7 +1,7 @@
 <script type="text/javascript">
 $(function () {
     $('#startFeed').on('click', function() {
-        $.post('start_feed', {id:(username+'-'+devices['cam'])}, function(response){
+        $.post('start_feed', {id:(username+'-'+devices['cam'])}, function(){
         	setTimeout(function(){$('#feed').attr('src', 'http://127.0.0.1:8002');}, 100);  
         });
     });
@@ -42,7 +42,7 @@ $(function () {
         	$.post('command', {id:(username+'-'+devices['robot']), cmd:'action_gesture', data:anim});
         	popup.modal('hide');
         });
-        popup.on('hidden.bs.modal', function (e) {
+        popup.on('hidden.bs.modal', function() {
         	content.off();
             content.empty();
         });
@@ -53,15 +53,15 @@ $(function () {
     $('#eyeColour').on('click', function() {
         var popup = $('#popup');
         var content = $('#popupContent');
-        $.each(allColours, function(name,code) {
-			content.append('<button type="submit" value="'+name+'" class="btn btn-primary ml-1 mb-1" style="color:#202020;background-color:'+code+'">'+name+'</button>');
+        $.each(allColours, function(name,hex) {
+			content.append('<button type="submit" value="'+name+'" class="btn btn-primary ml-1 mb-1" style="color:#202020;background-color:'+hex+';">'+name+'</button>');
         });
         content.on('click', ':submit', function() {
             var colour = $(this).val().toLowerCase();
         	$.post('command', {id:(username+'-'+devices['robot']), cmd:'action_eyecolour', data:colour});
         	popup.modal('hide');
         });
-        popup.on('hidden.bs.modal', function (e) {
+        popup.on('hidden.bs.modal', function() {
             content.off();
             content.empty();
         });
