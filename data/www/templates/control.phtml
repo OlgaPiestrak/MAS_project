@@ -43,6 +43,7 @@ $(function () {
         	popup.modal('hide');
         });
         popup.on('hidden.bs.modal', function (e) {
+        	content.off();
             content.empty();
         });
     	popup.modal('show');
@@ -62,6 +63,7 @@ $(function () {
         	popup.modal('hide');
         });
         popup.on('hidden.bs.modal', function (e) {
+            content.off();
             content.empty();
         });
     	popup.modal('show');
