@@ -11,11 +11,12 @@ $(function () {
     });
     var idle = false;
     $('#toggleIdle').on('click', function() {
+        var robotId = username+'-'+devices['robot'];
         if(idle) {
-    		$.post('command', {id:(username+'-'+devices['robot']), cmd:'action_idle', data:'false'});
+    		$.post('command', {id:robotId, cmd:'action_idle', data:'false'});
 			idle = false;
         } else {
-    		$.post('command', {id:(username+'-'+devices['robot']), cmd:'action_idle', data:'true'});
+    		$.post('command', {id:robotId, cmd:'action_idle', data:'true'});
 			idle = true;
         }
     });
@@ -25,14 +26,13 @@ $(function () {
         var name = $(this).val();
         var data = form.serializeArray();
         if(name.startsWith('tablet')) {
+            var tabletId = username+'-'+devices['tablet'];
             var html = '<center><h1>'+data[0].value+'</h1></center>';
             if(tabletOpen) {
-            	$.post('command', {id:(username+'-'+devices['tablet']), cmd:'render_html', data:html});
+            	$.post('command', {id:tabletId, cmd:'render_html', data:html});
             } else {
-            	$.post('command', {id:(username+'-'+devices['tablet']), cmd:'tablet_control', data:'show'}, function(){
-                	setTimeout(function(){
-                    	$.post('command', {id:(username+'-'+devices['tablet']), cmd:'render_html', data:html});
-                    }, 3000);
+            	$.post('command', {id:tabletId, cmd:'tablet_control', data:'show'}, function(){
+                	setTimeout(function(){$.post('command', {id:tabletId, cmd:'render_html', data:html});}, 3000);
                 	tabletOpen = true;
                 });
             }			
