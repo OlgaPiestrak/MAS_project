@@ -1,6 +1,22 @@
 <script type="text/javascript">
 $(function () {
-
+	$('#customFile').on('change', function(e) {
+		var files = e.target.files;
+		if(files.length < 1) {
+			return false;
+		}
+		var fr = new FileReader();
+		fr.onload = function(e) { 
+			var config = JSON.parse(e.target.result);
+			console.log(config);
+		}
+		fr.readAsText(files.item(0));
+	});
 });
 </script>
 <h3>Favourites</h3>
+<div class="custom-file mb-3">
+  <input type="file" class="custom-file-input" id="customFile" accept=".json">
+  <label class="custom-file-label" for="customFile">Config</label>
+</div>
+<div id="favs" class="form-inline"></div>
