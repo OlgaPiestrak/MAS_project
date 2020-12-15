@@ -1,4 +1,4 @@
-FROM openjdk:8u272-jre-slim
+FROM openjdk:8u275-jre-slim
 
 RUN apt-get -y update
 RUN apt-get install -y --fix-missing openssh-client \

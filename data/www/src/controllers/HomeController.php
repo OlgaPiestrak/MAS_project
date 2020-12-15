@@ -21,6 +21,69 @@ class HomeController
         return $this->container->get('renderer')->render($response, 'index.phtml', $args);
     }
 
+    public function get_devices(Request $request, Response $response, $args)
+    {
+        $dir = __DIR__;
+        echo self::exec("python2 -u $dir/get_devices.py");
+    }
+
+    public function set_devices(Request $request, Response $response, $args)
+    {
+        $params = $request->getParams();
+        $_SESSION['devices'] = $params['devices'] ?? [];
+
+        $devices = []; // max one of each type allowed
+        foreach ($_SESSION['devices'] as $device) {
+            $explode = explode(':', $device);
+            $devices[$explode[1]] = $explode[0];
+        }
+
+        return json_encode($devices);
+    }
+
+    public function start_feed(Request $request, Response $response, $args)
+    {
+        $params = $request->getParams();
+        $identifier = $params['id'] ?? '';
+        if (empty($identifier)) {
+            return $response->withStatus(422, 'Please select a camera device first.');
+        } else {
+            $dir = __DIR__;
+            echo self::exec("python2 -u $dir/feed.py --identifier $identifier --command start");
+        }
+    }
+    
+    public function stop_feed(Request $request, Response $response, $args)
+    {
+        $params = $request->getParams();
+        $identifier = $params['id'] ?? '';
+        if (empty($identifier)) {
+            return $response->withStatus(422, 'Please select a camera device first.');
+        } else {
+            $dir = __DIR__;
+            echo self::exec("python2 -u $dir/feed.py --identifier $identifier --command stop");
+        }
+    }
+    
+
+    public function command(Request $request, Response $response, $args)
+    {
+        $params = $request->getParams();
+        $identifier = $params['id'] ?? '';
+        if (empty($identifier)) {
+            return $response->withStatus(422, 'No suitable target device found.');
+        } else {
+            $cmd = $params['cmd'] ?? '';
+            if (empty($cmd)) {
+                return $response->withStatus(422, 'No actual command given.');                
+            } else {
+                $data = $params['data'] ?? '';
+                $dir = __DIR__;
+                echo self::exec("python2 -u $dir/commands.py --identifier $identifier --command $cmd --data \"$data\"");
+            }
+        }
+    }
+
     public function signup(Request $request, Response $response, $args)
     {
         $params = $request->getParams();
@@ -31,7 +94,7 @@ class HomeController
         if (strlen($username) < 4) {
             return $response->withStatus(422, 'Please use at least 4 characters in the username.');
         }
-        $password = $params['newPass'] ?? '';
+        $password = trim($params['newPass'] ?? '');
         if (strlen($password) < 8) {
             return $response->withStatus(422, 'Please use at least 8 characters in the password.');
         }

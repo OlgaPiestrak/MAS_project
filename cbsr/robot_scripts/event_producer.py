@@ -1,19 +1,15 @@
 from argparse import ArgumentParser
 from functools import partial
 from sys import exit
-from threading import Thread
-from time import sleep, time
-from uuid import getnode
 
+from cbsr.device import CBSRdevice
 from qi import Application
-from redis import Redis
 
 
-class EventProcessingModule(object):
-    def __init__(self, app, server, username, password, profiling):
-        app.start()
+class EventProcessingModule(CBSRdevice):
+    def __init__(self, session, server, username, password, profiling):
         self.username = username
-        self.memory_service = app.session.service('ALMemory')
+        self.memory_service = session.service('ALMemory')
         self.touch_sensors = {'RightBumperPressed': {'pressed': False, 'alt': 'RightBumperReleased'},
                               'LeftBumperPressed': {'pressed': False, 'alt': 'LeftBumperReleased'},
                               'BackBumperPressed': {'pressed': False, 'alt': 'BackBumperReleased'},
@@ -41,26 +37,10 @@ class EventProcessingModule(object):
         self.add_event('ALTextToSpeech/TextDone', self.on_text_done)
         self.add_event('ALTextToSpeech/TextInterrupted', self.on_text_done)
 
-        self.running = True
+        super(EventProcessingModule, self).__init__(server, username, password, profiling)
 
-        # Initialise Redis
-        mac = hex(getnode()).replace('0x', '').upper()
-        self.device = ''.join(mac[i: i + 2] for i in range(0, 11, 2))
-        self.identifier = self.username + '-' + self.device
-        print('Connecting ' + self.identifier + ' to ' + server + '...')
-        self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
-        identifier_thread = Thread(target=self.announce)
-        identifier_thread.start()
-
-    def announce(self):
-        user = 'user:' + self.username
-        device = self.device + ':robot'
-        while self.running:
-            self.redis.zadd(user, {device: time()})
-            sleep(59.9)
-
-    def produce(self, value):
-        self.redis.publish(self.identifier + '_events', value)
+    def get_device_type(self):
+        return 'robot'
 
     def add_event(self, event, callback):
         subscriber = self.memory_service.subscriber(event)
@@ -97,33 +77,33 @@ class EventProcessingModule(object):
 
     def on_posture_changed(self, event_name, posture):
         self.disconnect_event('PostureChanged')
-        self.redis.publish(self.identifier + '_robot_posture_changed', posture)
+        self.publish('robot_posture_changed', posture)
         print('PostureChanged: ' + posture)
         self.reconnect_event('PostureChanged')
 
     def on_is_awake(self, event_name, is_awake):
         self.disconnect_event('robotIsWakeUp')
-        self.redis.publish(self.identifier + '_robot_awake_changed', '1' if is_awake else '0')
+        self.publish('robot_awake_changed', '1' if is_awake else '0')
         print('robotIsWakeUp: ' + str(is_awake))
         self.reconnect_event('robotIsWakeUp')
 
     def on_stiffness_changed(self, event_name, stiffness):
         self.disconnect_event('BodyStiffnessChanged')
         stiffness = str(int(stiffness))
-        self.redis.publish(self.identifier + '_robot_stiffness_changed', stiffness)
+        self.publish('robot_stiffness_changed', stiffness)
         print('BodyStiffnessChanged: ' + stiffness)
         self.reconnect_event('BodyStiffnessChanged')
 
     def on_battery_charge_changed(self, event_name, percentage):
         self.disconnect_event('BatteryChargeChanged')
         percentage = str(int(percentage))
-        self.redis.publish(self.identifier + '_robot_battery_charge_changed', percentage)
+        self.publish('robot_battery_charge_changed', percentage)
         print('BatteryChargeChanged: ' + percentage)
         self.reconnect_event('BatteryChargeChanged')
 
     def on_charging_changed(self, event_name, is_charging):
         self.disconnect_event('BatteryPowerPluggedChanged')
-        self.redis.publish(self.identifier + '_robot_charging_changed', '1' if is_charging else '0')
+        self.publish('robot_charging_changed', '1' if is_charging else '0')
         print('BatteryPowerPluggedChanged: ' + str(is_charging))
         self.reconnect_event('BatteryPowerPluggedChanged')
 
@@ -135,7 +115,7 @@ class EventProcessingModule(object):
                 output += ';' + str(device)
             else:
                 output = device
-        self.redis.publish(self.identifier + '_robot_hot_device_detected', output)
+        self.publish('robot_hot_device_detected', output)
         print('HotDeviceDetected: ' + output)
         self.reconnect_event('HotDeviceDetected')
 
@@ -149,15 +129,6 @@ class EventProcessingModule(object):
             self.produce('TextDone')
             print('TextDone')
 
-    def cleanup(self):
-        self.running = False
-        print('Trying to exit gracefully...')
-        try:
-            self.redis.close()
-            print('Graceful exit was successful')
-        except Exception as exc:
-            print('Graceful exit has failed: ' + exc.message)
-
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -167,14 +138,15 @@ if __name__ == '__main__':
     parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
 
-    name = 'EventProcessingModule'
+    my_name = 'EventProcessingModule'
     try:
-        app = Application([name])
-        event_processing = EventProcessingModule(app=app, server=args.server, username=args.username,
+        app = Application([my_name])
+        app.start()  # initialise
+        event_processing = EventProcessingModule(session=app.session, server=args.server, username=args.username,
                                                  password=args.password, profiling=args.profile)
         # session_id = app.session.registerService(name, event_processing)
         app.run()  # blocking
-        event_processing.cleanup()
+        event_processing.shutdown()
         # app.session.unregisterService(session_id)
     except Exception as err:
         print('Cannot connect to Naoqi: ' + err.message)

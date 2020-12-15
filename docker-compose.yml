@@ -379,6 +379,37 @@ services:
 
     depends_on:
       - redis
+  
+  # ------------------------------------------------------------
+  # Stream Video service
+  # ------------------------------------------------------------
+  stream_video:
+    image: java8
+    build:
+      context: .
+      dockerfile: Dockerfile.java8
+    hostname: stream_video
+    user: "${NEW_UID}:${NEW_GID}"
+    env_file:
+      - ./.env
+
+    working_dir: /stream_video
+    command: java -jar stream-video.jar
+    volumes:
+      - ./cbsr/stream_video:/stream_video:ro${MOUNT_OPTIONS}
+
+    tty: true
+    stdin_open: false
+
+    ports:
+      - "8002:8002"
+
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.19
+
+    depends_on:
+      - redis
 
 ################################################################################
 # NETWORK

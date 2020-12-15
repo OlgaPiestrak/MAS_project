@@ -1,19 +1,18 @@
 from io import BytesIO
 from threading import Event, Thread
-from time import gmtime, mktime, sleep
 
 import cv2
 from PIL import Image
+from cbsr.service import CBSRservice
 from face_recognition import face_locations
 from imutils import resize
 from numpy import asarray, uint8
 
 
-class PeopleDetectionService(object):
+class PeopleDetectionService(CBSRservice):
     def __init__(self, connect, identifier, disconnect):
-        self.redis = connect()
-        self.identifier = identifier
-        self.disconnect = disconnect
+        super(PeopleDetectionService, self).__init__(connect, identifier, disconnect)
+
         # Image size (filled later)
         self.image_width = 0
         self.image_height = 0
@@ -23,35 +22,13 @@ class PeopleDetectionService(object):
         self.is_image_available = False
         self.image_available_flag = Event()
 
-        # Redis initialization
-        print('Subscribing ' + identifier)
-        self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe(**{identifier + '_events': self.execute,
-                                 identifier + '_image_available': self.set_image_available,
-                                 identifier + '_action_take_picture': self.take_picture})
-        self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)
+    def get_device_types(self):
+        return ['cam']
 
-        # Ensure we'll shutdown at some point again
-        check_if_alive = Thread(target=self.check_if_alive)
-        check_if_alive.start()
-
-    def check_if_alive(self):
-        split = self.identifier.split('-')
-        user = 'user:' + split[0]
-        device = split[1] + ':cam'
-        while True:
-            try:
-                score = self.redis.zscore(user, device)
-                if score >= (mktime(gmtime()) - 60):
-                    sleep(60.1)
-                    continue
-            except:
-                pass
-            self.cleanup()
-            break
-
-    def produce_event(self, event):
-        self.redis.publish(self.identifier + '_events', event)
+    def get_channel_action_mapping(self):
+        return {self.get_full_channel('events'): self.execute,
+                self.get_full_channel('image_available'): self.set_image_available,
+                self.get_full_channel('action_take_picture'): self.take_picture}
 
     def execute(self, message):
         data = message['data']
@@ -77,9 +54,9 @@ class PeopleDetectionService(object):
                 self.image_available_flag.clear()
 
                 # Create a PIL Image from the byte string redis result
-                image_stream = self.redis.get(self.identifier + '_image_stream')
+                image_stream = self.redis.get(self.get_full_channel('image_stream'))
                 if self.image_width == 0:
-                    image_size_string = self.redis.get(self.identifier + '_image_size')
+                    image_size_string = self.redis.get(self.get_full_channel('image_size'))
                     print(self.identifier + '_image_size => ' + image_size_string)
                     self.image_width = int(image_size_string[0:4])
                     self.image_height = int(image_size_string[4:])
@@ -89,7 +66,7 @@ class PeopleDetectionService(object):
                 if self.save_image:
                     bytes_io = BytesIO()
                     image.save(bytes_io)
-                    self.redis.publish(self.identifier + '_picture_newfile', bytes_io.getvalue())
+                    self.publish('picture_newfile', bytes_io.getvalue())
                     self.save_image = False
 
                 # Convert to OpenCV
@@ -102,7 +79,7 @@ class PeopleDetectionService(object):
 
                 if faces:
                     print(self.identifier + ': Detected Person!')
-                    self.redis.publish(self.identifier + '_detected_person', '')
+                    self.publish('detected_person', '')
             else:
                 self.image_available_flag.wait()
         self.produce_event('PeopleDetectionDone')
@@ -118,11 +95,3 @@ class PeopleDetectionService(object):
     def cleanup(self):
         self.image_available_flag.set()
         self.is_detecting = False
-        print(self.identifier + ': trying to exit gracefully...')
-        try:
-            self.pubsub_thread.stop()
-            self.redis.close()
-            print(self.identifier + ': graceful exit was successful')
-        except Exception as err:
-            print(self.identifier + ': graceful exit has failed due to ' + err.message)
-        self.disconnect(self.identifier)

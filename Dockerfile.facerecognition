@@ -43,3 +43,6 @@ RUN pip2 install --no-cache-dir --upgrade pip \
 	tensorflow~=2.1 \
 	keras~=2.3.0 \
 	pandas~=0.24
+
+COPY cbsr/common_python /tmp
+RUN cd /tmp && python setup.py install && rm -rf *

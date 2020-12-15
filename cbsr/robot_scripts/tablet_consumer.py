@@ -1,51 +1,32 @@
-"""
-Redis consumer, runs on the robot.
-"""
 from argparse import ArgumentParser
-from threading import Thread
-from time import sleep, time
-from uuid import getnode
 
+from cbsr.device import CBSRdevice
 from qi import Application
-from redis import Redis
 
 from tablet import Tablet
 
 
-class TabletConsumer(object):
+class TabletConsumer(CBSRdevice):
     """Receives commands from Redis and executes them on the tablet"""
 
-    def __init__(self, app, server, username, password, topics, profiling):
-        app.start()
-        self.username = username
-        self.tablet = Tablet(app.session, server)
-        self.running = True
+    def __init__(self, session, server, username, password, topics, profiling):
+        self.tablet = Tablet(session, server)
 
-        # Initialise Redis
-        mac = hex(getnode()).replace('0x', '').upper()
-        self.device = ''.join(mac[i: i + 2] for i in range(0, 11, 2))
-        self.identifier = self.username + '-' + self.device
-        self.cutoff = len(self.identifier) + 1
-        self.webcontent_uri = 'https://' + server + ':8000/index.html?id=' + self.identifier
-        print('Connecting ' + self.identifier + ' to ' + server + '...')
-        self.redis = Redis(host=server, username=username, password=password, ssl=True, ssl_ca_certs='cacert.pem')
-        pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        pubsub.subscribe(**dict.fromkeys(((self.identifier + '_' + t) for t in topics), self.execute))
-        self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
-        identifier_thread = Thread(target=self.announce)
-        identifier_thread.start()
+        self.topics = topics
+        super(TabletConsumer, self).__init__(server, username, password, profiling)
 
-    def announce(self):
-        user = 'user:' + self.username
-        device = self.device + ':tablet'
-        while self.running:
-            self.redis.zadd(user, {device: time()})
-            sleep(59.9)
+        self.uri = 'https://' + server + ':8000/index.html?id=' + self.identifier
+
+    def get_device_type(self):
+        return 'tablet'
+
+    def get_channel_action_mapping(self):
+        return dict.fromkeys((self.get_full_channel(t) for t in self.topics), self.execute)
 
     # We need this many if statements to handle the different types of commands.
     def execute(self, message):
         """Execute a single command. Format is documented on Confluence."""
-        channel = message['channel'][self.cutoff:]
+        channel = self.get_channel_name(message['channel'])
         content = message['data']
         print('[{}] {}'.format(channel, content))
 
@@ -72,7 +53,7 @@ class TabletConsumer(object):
         if command == 'hide':
             self.tablet.hide()
         elif command == 'show':
-            self.tablet.open_url(self.webcontent_uri)
+            self.tablet.open_url(self.uri)
         elif command == 'reload':
             self.tablet.reload()
         elif command == 'settings':
@@ -89,16 +70,6 @@ class TabletConsumer(object):
         else:
             print('Command not found: ' + command)
 
-    def cleanup(self):
-        self.running = False
-        print('Trying to exit gracefully...')
-        try:
-            self.pubsub_thread.stop()
-            self.redis.close()
-            print('Graceful exit was successful')
-        except Exception as exc:
-            print('Graceful exit has failed: ' + exc.message)
-
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -108,15 +79,17 @@ if __name__ == '__main__':
     parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
 
-    name = 'TabletConsumer'
+    my_name = 'TabletConsumer'
     try:
-        app = Application([name])
-        tablet_consumer = TabletConsumer(app=app, server=args.server, username=args.username, password=args.password,
+        app = Application([my_name])
+        app.start()  # initialise
+        tablet_consumer = TabletConsumer(session=app.session, server=args.server, username=args.username,
+                                         password=args.password,
                                          topics=['tablet_control', 'tablet_audio', 'tablet_image', 'tablet_video',
                                                  'tablet_web'], profiling=args.profile)
         # session_id = app.session.registerService(name, tablet_consumer)
         app.run()  # blocking
-        tablet_consumer.cleanup()
+        tablet_consumer.shutdown()
         # app.session.unregisterService(session_id)
     except Exception as err:
         print('Cannot connect to Naoqi: ' + err.message)

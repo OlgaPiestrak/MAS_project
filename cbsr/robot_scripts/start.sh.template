@@ -16,6 +16,7 @@ echo "Installing..."
 
 /usr/bin/pip install --user --upgrade pip
 ../.local/bin/pip install --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 pandas~=0.20
+/usr/bin/python setup.py install --user
 
 nohup python -u action_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > action_consumer.log 2>&1 & echo $! > action_consumer.pid
 nohup python -u audio_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > audio_consumer.log 2>&1 & echo $! > audio_consumer.pid

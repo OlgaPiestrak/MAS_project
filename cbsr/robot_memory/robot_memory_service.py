@@ -1,7 +1,6 @@
 from datetime import datetime
-from threading import Thread
-from time import gmtime, mktime, sleep
 
+from cbsr.service import CBSRservice
 from redis import DataError
 from simplejson import loads
 
@@ -16,39 +15,18 @@ class UserDoesNotExistError(Exception):
     pass
 
 
-class RobotMemoryService:
+class RobotMemoryService(CBSRservice):
     def __init__(self, connect, identifier, disconnect):
-        self.redis = connect()
-        self.identifier = identifier
-        self.disconnect = disconnect
+        super(RobotMemoryService, self).__init__(connect, identifier, disconnect)
 
-        # Redis initialization
-        print('Subscribing ' + identifier)
-        self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe(**{identifier + '_memory_add_entry': self.entry_handler,
-                                 identifier + '_memory_user_session': self.get_user_session,
-                                 identifier + '_memory_set_user_data': self.set_user_data,
-                                 identifier + '_memory_get_user_data': self.get_user_data})
-        self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)
+    def get_device_types(self):
+        return ['robot']
 
-        # Ensure we'll shutdown at some point again
-        check_if_alive = Thread(target=self.check_if_alive)
-        check_if_alive.start()
-
-    def check_if_alive(self):
-        split = self.identifier.split('-')
-        user = 'user:' + split[0]
-        device = split[1] + ':robot'
-        while True:
-            try:
-                score = self.redis.zscore(user, device)
-                if score >= (mktime(gmtime()) - 60):
-                    sleep(60.1)
-                    continue
-            except:
-                pass
-            self.cleanup()
-            break
+    def get_channel_action_mapping(self):
+        return {self.get_full_channel('memory_add_entry'): self.entry_handler,
+                self.get_full_channel('memory_user_session'): self.get_user_session,
+                self.get_full_channel('memory_set_user_data'): self.set_user_data,
+                self.get_full_channel('memory_get_user_data'): self.get_user_data}
 
     def get_user_session(self, message):
         try:
@@ -116,11 +94,8 @@ class RobotMemoryService:
         except EntryIncorrectFormatError as err:
             print(self.identifier + ' > Could not get user data due to: ' + err.message)
 
-    def produce_event(self, value):
-        self.redis.publish(self.identifier + '_events', value)
-
     def produce_data(self, key, value):
-        self.redis.publish(self.identifier + '_memory_data', str(key) + ';' + str(value))
+        self.publish('memory_data', str(key) + ';' + str(value))
 
     @staticmethod
     def get_data(message, correct_length, correct_format=''):
@@ -128,13 +103,3 @@ class RobotMemoryService:
         if len(data) != correct_length:
             raise EntryIncorrectFormatError('Data does not have format ' + correct_format)
         return data
-
-    def cleanup(self):
-        print('Trying to exit gracefully...')
-        try:
-            self.pubsub_thread.stop()
-            self.redis.close()
-            print('Graceful exit was successful')
-        except Exception as err:
-            print('Graceful exit has failed: ' + err.message)
-        self.disconnect(self.identifier)

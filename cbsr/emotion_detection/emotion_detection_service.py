@@ -1,10 +1,10 @@
 """ All Credits goes to https://github.com/vjgpt/Face-and-Emotion-Recognition """
 from threading import Event, Thread
-from time import gmtime, mktime, sleep
 
 import cv2
 import numpy as np
 from PIL import Image
+from cbsr.service import CBSRservice
 from dlib import get_frontal_face_detector
 from imutils import face_utils, resize
 # direct import from keras has a bug see: https://stackoverflow.com/a/59810484/3668659
@@ -15,11 +15,10 @@ from utils.inference import apply_offsets
 from utils.preprocessor import preprocess_input
 
 
-class EmotionDetectionService:
+class EmotionDetectionService(CBSRservice):
     def __init__(self, connect, identifier, disconnect):
-        self.redis = connect()
-        self.identifier = identifier
-        self.disconnect = disconnect
+        super(EmotionDetectionService, self).__init__(connect, identifier, disconnect)
+
         # Image size (filled later)
         self.image_width = 0
         self.image_height = 0
@@ -39,34 +38,12 @@ class EmotionDetectionService:
         # getting input model shapes for inference
         self.emotion_target_size = self.emotion_classifier.input_shape[1:3]
 
-        # Redis initialization
-        print('Subscribing ' + identifier)
-        self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe(**{identifier + '_events': self.execute,
-                                 identifier + '_image_available': self.set_image_available})
-        self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)
+    def get_device_types(self):
+        return ['cam']
 
-        # Ensure we'll shutdown at some point again
-        check_if_alive = Thread(target=self.check_if_alive)
-        check_if_alive.start()
-
-    def check_if_alive(self):
-        split = self.identifier.split('-')
-        user = 'user:' + split[0]
-        device = split[1] + ':cam'
-        while True:
-            try:
-                score = self.redis.zscore(user, device)
-                if score >= (mktime(gmtime()) - 60):
-                    sleep(60.1)
-                    continue
-            except:
-                pass
-            self.cleanup()
-            break
-
-    def produce_event(self, event):
-        self.redis.publish(self.identifier + '_events', event)
+    def get_channel_action_mapping(self):
+        return {self.get_full_channel('events'): self.execute,
+                self.get_full_channel('image_available'): self.set_image_available}
 
     def execute(self, message):
         data = message['data']
@@ -92,9 +69,9 @@ class EmotionDetectionService:
                 self.image_available_flag.clear()
 
                 # Create a PIL Image from byte string from redis result
-                image_stream = self.redis.get(self.identifier + '_image_stream')
+                image_stream = self.redis.get(self.get_full_channel('image_stream'))
                 if self.image_width == 0:
-                    image_size_string = self.redis.get(self.identifier + '_image_size')
+                    image_size_string = self.redis.get(self.get_full_channel('image_size'))
                     self.image_width = int(image_size_string[0:4])
                     self.image_height = int(image_size_string[4:])
                 image = Image.frombytes('RGB', (self.image_width, self.image_height), image_stream)
@@ -119,7 +96,7 @@ class EmotionDetectionService:
                     emotion_label_arg = np.argmax(emotion_prediction)
                     emotion_text = self.emotion_labels[emotion_label_arg]
                     print(self.identifier + ': detected ' + emotion_text)
-                    self.redis.publish(self.identifier + '_detected_emotion', emotion_text)
+                    self.publish('detected_emotion', emotion_text)
             else:
                 self.image_available_flag.wait()
         self.produce_event('EmotionDetectionStarted')
@@ -132,12 +109,3 @@ class EmotionDetectionService:
     def cleanup(self):
         self.image_available_flag.set()
         self.is_detecting = False
-        self.running = False
-        print('Trying to exit gracefully...')
-        try:
-            self.pubsub_thread.stop()
-            self.redis.close()
-            print('Graceful exit was successful')
-        except Exception as err:
-            print('Graceful exit has failed: ' + err.message)
-        self.disconnect(self.identifier)
