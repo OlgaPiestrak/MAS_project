@@ -6,12 +6,8 @@ from cbsr.device import CBSRdevice
 from qi import Application
 from simplejson import dumps, loads
 
+from colors import Colors
 from transformation import Transformation
-
-YELLOW = 0x969600
-MAGENTA = 0xff00ff
-ORANGE = 0xfa7800
-GREEN = 0x00ff00
 
 # Factors to set the decimal precision for motion angles and times for compression.
 # When a motion is compressed the respective motion decimal values will be converted to an int. To preserve the
@@ -42,6 +38,10 @@ class RobotConsumer(CBSRdevice):
         self.recorded_motion = {}
         self.record_motion_thread = None
         self.is_motion_recording = False
+
+        # light animations
+        self.is_running_led_animation = False
+        self.led_animation_thread = None
 
         self.topics = topics
         super(RobotConsumer, self).__init__(server, username, password, profiling)
@@ -142,6 +142,10 @@ class RobotConsumer(CBSRdevice):
             emotion = params[1] if (len(params) > 1) else None
             transformed = Transformation(animation, emotion).get_behavior()
             self.process_action_play_motion(transformed, False)
+        elif channel == 'action_led_color':
+            self.process_action_led_color(data)
+        elif channel == 'action_led_animation':
+            self.process_action_led_animation(data)
         else:
             print('Unknown command')
 
@@ -166,8 +170,8 @@ class RobotConsumer(CBSRdevice):
             self.produce('GoToPostureStarted')
             self.posture.goToPosture(target_posture, speed)
             self.produce('GoToPostureDone')
-        except ValueError as err:
-            print('action_posture received incorrect input (' + err.message + '): ' + posture)
+        except ValueError as valerr:
+            print('action_posture received incorrect input (' + valerr.message + '): ' + posture)
 
     def process_action_stiffness(self, message):
         """
@@ -198,6 +202,7 @@ class RobotConsumer(CBSRdevice):
         """
         Play a motion of a given robot by moving a given set of joints to a given angle for a given time frame.
 
+        :param compressed: flag to indicate whether the motion data is compressed or not
         :param message: zlib compressed json with the following format:
         {'robot': '<nao/pepper>', 'compress_factor_angles': int, 'compress_factor_times': int,
         'motion': {'Joint1': {'angles': list, 'times': list}, 'JointN: {...}}}
@@ -262,7 +267,7 @@ class RobotConsumer(CBSRdevice):
         http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains
 
         Suitable joints and joint chains for pepper:
-        http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html
+        http://doc.aldebaran.com/2-5/family/pepper_technical/bodyparts_pep.html
 
         :param message:
         :return:
@@ -290,6 +295,221 @@ class RobotConsumer(CBSRdevice):
                 raise ValueError('Command for action_record_motion not recognized: ' + message)
         except ValueError as valerr:
             print(valerr.message)
+
+    def process_action_led_color(self, message):
+        """
+        Generic method to change the color of one or more leds (naoqi ALLedsProxy.faceRGB)
+        or turn one or more leds off (naoqi ALLedsProxy.off)
+
+        Ledgroup names for Nao: http://doc.aldebaran.com/2-8/family/nao_technical/leds_naov6.html#naov6-led
+        Ledgroup names for Pepper: http://doc.aldebaran.com/2-5/family/pepper_technical/leds_pep.html#led-pepper
+
+        More info: http://doc.aldebaran.com/2-8/naoqi/sensors/alleds.html#groups-short-names-and-names
+
+        :param message: list of ledgroup names, list of colors (rgb hex code or from COLORS list)
+        :return:
+        """
+        try:
+            leds, colors, fade_time = message.split(';')
+            leds = loads(leds)  # parse string json list to python list.
+            colors = self.to_hex_list(loads(colors))  # parse string json list to hex colors
+            fade_time = float(fade_time)
+            if fade_time > 0:
+                fade_time = fade_time / 1000.0  # transform from milliseconds to seconds
+            if len(leds) != len(colors):
+                raise ValueError('Number of leds not equal to the number of colors (' + str(len(leds)) + ' vs. '
+                                 + str(len(colors)) + ')')
+            # loop over all leds and change to provided color.
+            self.produce('LedColorStarted')
+            led_threads = []
+            for i in range(0, len(leds)):
+                if colors[i] == 'off':
+                    t = Thread(target=self.leds.off, args=(leds[i], ))
+                else:
+                    t = Thread(target=self.leds.fadeRGB, args=(leds[i], colors[i], fade_time, ))
+                t.start()
+                led_threads.append(t)
+
+            for t in led_threads:
+                t.join()
+            self.produce('LedColorDone')
+        except ValueError as valerr:
+            print(valerr.message)
+
+    def process_action_led_animation(self, message):
+        """
+        Play one of the available custom LED animations: rotate, blink, alternate or stop the animation.
+
+        Two available commands:
+        To start animation: 'start;names of participating leds; colors; speed'
+        To stop animation:  'stop'
+
+        Names of participating leds can be: 'eyes', 'chest', 'feet' or 'all'
+
+        :param message:
+        :return:
+        """
+        try:
+            if 'start' in message:
+                _, location, anim_type, colors, speed = message.split(';')
+                colors = self.to_hex_list(loads(colors))  # parse string json list to hex colors
+                speed = float(speed) / 1000.0  # transform from milliseconds to seconds
+                if anim_type == 'rotate':
+                    if not(location == 'eyes' or location == 'all'):
+                        raise ValueError('Rotate animation is only possible when eyes are included.')
+                    self.led_animation_thread = Thread(target=self.led_animation_rotate,
+                                                       args=(location, colors, speed, ))
+                elif anim_type == 'blink':
+                    self.led_animation_thread = Thread(target=self.led_animation_blink,
+                                                       args=(location, colors, speed,))
+                elif anim_type == 'alternate':
+                    if location == 'chest':
+                        raise ValueError('The chest can only show a blinking animation.')
+                    self.led_animation_thread = Thread(target=self.led_animation_alternate,
+                                                       args=(location, colors, speed, ))
+                else:
+                    raise ValueError('Led animation "' + anim_type + '" not recognized.')
+                self.is_running_led_animation = True
+                self.led_animation_thread.start()
+                self.produce('LedAnimationStarted')
+            elif message == 'stop':
+                if self.is_running_led_animation:
+                    self.is_running_led_animation = False
+                    self.led_animation_thread.join()
+                for led in ['FaceLeds', 'ChestLeds', 'FeetLeds']:
+                    self.leds.fadeRGB(led, Colors.to_rgb_hex('white'), 0)
+                self.produce('LedAnimationDone')
+            else:
+                raise ValueError('Command for action_light_animation not recognized: ' + message)
+        except ValueError as e:
+            print(e.message)
+
+    def led_animation_rotate(self, location, colors, speed):
+        """
+        Play rotate animation with given color and speed. Only the eyes can play the rotate animation.
+        In case location is 'all', the eyes will
+        rotate and the chest and feet will blink with the se
+        :param location: 'eyes' (default) or 'all'
+        :param colors: list of rgb hex color (when list size > 1, the first color will be used)
+        :param speed: rotations per second
+        :return:
+        """
+        interval = speed / 4.0
+        color = colors[0]
+        self.leds.off('FaceLeds')
+        while self.is_running_led_animation:
+            self.leds.off('FaceLedsExternal')
+            self.leds.fadeRGB('FaceLedsTop', color, 0)
+            if location == 'all':
+                self.leds.fadeRGB('ChestLeds', color, 0)
+                self.leds.fadeRGB('FeetLeds', color, 0)
+            sleep(interval)
+            self.leds.off('FaceLedsTop')
+            self.leds.fadeRGB('FaceLedsInternal', color, 0)
+            sleep(interval)
+            self.leds.off('FaceLedsInternal')
+            self.leds.fadeRGB('FaceLedsBottom', color, 0)
+            if location == 'all':
+                self.leds.off('ChestLeds')
+                self.leds.off('FeetLeds')
+            sleep(interval)
+            self.leds.off('FaceLedsBottom')
+            self.leds.fadeRGB('FaceLedsExternal', color, 0)
+            sleep(interval)
+
+    def led_animation_blink(self, location, colors, speed):
+        """
+        Let the given leds blink with given color and speed.
+
+        :param location: 'eyes', 'chest', 'feet', 'all' (default)
+        :param colors: list of rgb hex colors
+        :param speed: blinks per second
+        :return:
+        """
+        if location == 'eyes':
+            locs = ['FaceLeds']
+        elif location == 'chest':
+            locs = ['ChestLeds']
+        elif location == 'feet':
+            locs = ['FeetLeds']
+        else:  # location == 'all'
+            locs = ['FaceLeds', 'ChestLeds', 'FeetLeds']
+
+        interval = speed / 2.0
+        while self.is_running_led_animation:
+            for color in colors:
+                for loc in locs:
+                    self.leds.fadeRGB(loc, color, 0)
+                sleep(interval)
+                for loc in locs:
+                    self.leds.off(loc)
+                sleep(interval)
+
+    def led_animation_alternate(self, location, colors, speed):
+        """
+        Alternates two colors between left and right of pairs of leds (eyes and/or feet)
+
+        :param location: 'eyes', 'feet', 'all' (default)
+        :param colors: list of rgb hex colors
+        :param speed: alternations per second
+        :return:
+        """
+        if location == 'eyes':
+            locs_left = ['LeftFaceLeds']
+            locs_right = ['RightFaceLeds']
+        elif location == 'feet':
+            locs_left = ['LeftFootLeds']
+            locs_right = ['RightFootLeds']
+        else:  # location == 'all'
+            locs_left = ['LeftFaceLeds', 'LeftFootLeds']
+            locs_right = ['RightFaceLeds', 'RightFootLeds']
+
+        if len(colors) > 1:
+            color_left = colors[0]
+            color_right = colors[1]
+        else:
+            color_left = colors[0]
+            color_right = colors[0]
+
+        interval = speed / 2
+        while self.is_running_led_animation:
+            for loc_left in locs_left:
+                self.leds.fadeRGB(loc_left, color_left, 0)
+            for loc_right in locs_right:
+                self.leds.off(loc_right)
+            if location == 'all':
+                self.leds.fadeRGB('ChestLeds', color_left, 0)
+            sleep(interval)
+            for loc_left in locs_left:
+                self.leds.off(loc_left)
+            for loc_right in locs_right:
+                self.leds.fadeRGB(loc_right, color_right, 0)
+            if location == 'all':
+                self.leds.fadeRGB('ChestLeds', color_right, 0)
+            sleep(interval)
+
+    @staticmethod
+    def to_hex_list(colors):
+        """
+        Parsers string input to proper rgb hex color code.
+        If color code is not recognized, defaults to white (0xffffff).
+
+        :param colors: list of string with colors, can process various formats (0x<rgb hex code>, #<rgb hex code>,
+        off, or from the COLORS dictionary)
+        :return: color in format '0x******'
+        """
+        hex_colors = []
+        for color in colors:
+            if color == 'off':
+                hex_colors.append('off')
+            else:
+                rgb_hex = Colors.to_rgb_hex(color)  # returns None if color is not recognized
+                if rgb_hex:  # if not None
+                    hex_colors.append(rgb_hex)
+                else:
+                    hex_colors.append(0xffffff)
+                    print(color + ' not available, will default to white')
+        return hex_colors
 
     def record_motion(self, joint_chains, framerate):
         """
@@ -406,33 +626,38 @@ class RobotConsumer(CBSRdevice):
         return motion
 
     def change_led_colour(self, type, value):
+        yellow = Colors.to_rgb_hex('yellow')
+        magenta = Colors.to_rgb_hex('magenta')
+        orange = Colors.to_rgb_hex('orange')
+        green = Colors.to_rgb_hex('green')
+
         self.leds.off(type)
         if value == 'rainbow':  # make the eye colours rotate in the colors of the rainbow
             if type == 'FaceLeds':
                 p1 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Bottom', [YELLOW, MAGENTA, ORANGE, GREEN], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Bottom', [yellow, magenta, orange, green], [0, 0.5, 1, 1.5],))
                 p2 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Top', [MAGENTA, ORANGE, GREEN, YELLOW], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Top', [magenta, orange, green, yellow], [0, 0.5, 1, 1.5],))
                 p3 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'External', [ORANGE, GREEN, YELLOW, MAGENTA], [0, 0.5, 1, 1.5],))
+                            args=(type + 'External', [orange, green, yellow, magenta], [0, 0.5, 1, 1.5],))
                 p4 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Internal', [GREEN, YELLOW, MAGENTA, ORANGE], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Internal', [green, yellow, magenta, orange], [0, 0.5, 1, 1.5],))
             elif type == 'EarLeds':
                 p1 = Thread(target=self.leds.fadeListRGB,
-                            args=('Right' + type + 'Even', [YELLOW, MAGENTA, ORANGE, GREEN], [0, 0.5, 1, 1.5],))
+                            args=('Right' + type + 'Even', [yellow, magenta, orange, green], [0, 0.5, 1, 1.5],))
                 p2 = Thread(target=self.leds.fadeListRGB,
-                            args=('Right' + type + 'Odd', [MAGENTA, ORANGE, GREEN, YELLOW], [0, 0.5, 1, 1.5],))
+                            args=('Right' + type + 'Odd', [magenta, orange, green, yellow], [0, 0.5, 1, 1.5],))
                 p3 = Thread(target=self.leds.fadeListRGB,
-                            args=('Left' + type + 'Even', [ORANGE, GREEN, YELLOW, MAGENTA], [0, 0.5, 1, 1.5],))
+                            args=('Left' + type + 'Even', [orange, green, yellow, magenta], [0, 0.5, 1, 1.5],))
                 p4 = Thread(target=self.leds.fadeListRGB,
-                            args=('Left' + type + 'Odd', [GREEN, YELLOW, MAGENTA, ORANGE], [0, 0.5, 1, 1.5],))
+                            args=('Left' + type + 'Odd', [green, yellow, magenta, orange], [0, 0.5, 1, 1.5],))
             elif type == 'BrainLeds':
                 p1 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Back', [YELLOW, MAGENTA, ORANGE, GREEN], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Back', [yellow, magenta, orange, green], [0, 0.5, 1, 1.5],))
                 p2 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Middle', [MAGENTA, ORANGE, GREEN, YELLOW], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Middle', [magenta, orange, green, yellow], [0, 0.5, 1, 1.5],))
                 p3 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Front', [ORANGE, GREEN, YELLOW, MAGENTA], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Front', [orange, green, yellow, magenta], [0, 0.5, 1, 1.5],))
                 p4 = Thread(target=None)
 
             p1.start()
@@ -447,29 +672,29 @@ class RobotConsumer(CBSRdevice):
         elif value == 'greenyellow':  # make the eye colours a combination of green and yellow
             if type == 'FaceLeds':
                 p1 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Bottom', [YELLOW, GREEN, YELLOW, GREEN], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Bottom', [yellow, green, yellow, green], [0, 0.5, 1, 1.5],))
                 p2 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Top', [GREEN, YELLOW, GREEN, YELLOW], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Top', [green, yellow, green, yellow], [0, 0.5, 1, 1.5],))
                 p3 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'External', [YELLOW, GREEN, YELLOW, GREEN], [0, 0.5, 1, 1.5],))
+                            args=(type + 'External', [yellow, green, yellow, green], [0, 0.5, 1, 1.5],))
                 p4 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Internal', [GREEN, YELLOW, GREEN, YELLOW], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Internal', [green, yellow, green, yellow], [0, 0.5, 1, 1.5],))
             elif type == 'EarLeds':
                 p1 = Thread(target=self.leds.fadeListRGB,
-                            args=('Right' + type + 'Even', [YELLOW, GREEN, YELLOW, GREEN], [0, 0.5, 1, 1.5],))
+                            args=('Right' + type + 'Even', [yellow, green, yellow, green], [0, 0.5, 1, 1.5],))
                 p2 = Thread(target=self.leds.fadeListRGB,
-                            args=('Right' + type + 'Odd', [GREEN, YELLOW, GREEN, YELLOW], [0, 0.5, 1, 1.5],))
+                            args=('Right' + type + 'Odd', [green, yellow, green, yellow], [0, 0.5, 1, 1.5],))
                 p3 = Thread(target=self.leds.fadeListRGB,
-                            args=('Left' + type + 'Even', [YELLOW, GREEN, YELLOW, GREEN], [0, 0.5, 1, 1.5],))
+                            args=('Left' + type + 'Even', [yellow, green, yellow, green], [0, 0.5, 1, 1.5],))
                 p4 = Thread(target=self.leds.fadeListRGB,
-                            args=('Left' + type + 'Odd', [GREEN, YELLOW, GREEN, YELLOW], [0, 0.5, 1, 1.5],))
+                            args=('Left' + type + 'Odd', [green, yellow, green, yellow], [0, 0.5, 1, 1.5],))
             elif type == 'BrainLeds':
                 p1 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Back', [YELLOW, GREEN, YELLOW, GREEN], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Back', [yellow, green, yellow, green], [0, 0.5, 1, 1.5],))
                 p2 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Middle', [GREEN, YELLOW, GREEN, YELLOW], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Middle', [green, yellow, green, yellow], [0, 0.5, 1, 1.5],))
                 p3 = Thread(target=self.leds.fadeListRGB,
-                            args=(type + 'Front', [YELLOW, GREEN, YELLOW, GREEN], [0, 0.5, 1, 1.5],))
+                            args=(type + 'Front', [yellow, green, yellow, green], [0, 0.5, 1, 1.5],))
                 p4 = Thread(target=None)
 
             p1.start()
@@ -503,7 +728,8 @@ if __name__ == '__main__':
                                                'action_headcolour', 'action_idle', 'action_turn', 'action_turn_small',
                                                'action_wakeup', 'action_rest', 'action_set_breathing', 'action_posture',
                                                'action_stiffness', 'action_play_motion', 'action_record_motion',
-                                               'action_motion_file'], profiling=args.profile)
+                                               'action_motion_file', 'action_led_color', 'action_led_animation'],
+                                       profiling=args.profile)
         # session_id = app.session.registerService(name, robot_consumer)
         app.run()  # blocking
         robot_consumer.shutdown()
