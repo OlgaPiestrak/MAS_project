@@ -29,7 +29,6 @@ class EventProcessingModule(CBSRdevice):
         # Add body posture events
         self.add_event('PostureChanged', self.on_posture_changed)
         self.add_event('robotIsWakeUp', self.on_is_awake)
-        self.add_event('BodyStiffnessChanged', self.on_stiffness_changed)
         self.add_event('BatteryChargeChanged', self.on_battery_charge_changed)
         self.add_event('BatteryPowerPluggedChanged', self.on_charging_changed)
         self.add_event('HotDeviceDetected', self.on_hot_device_detected)
@@ -86,13 +85,6 @@ class EventProcessingModule(CBSRdevice):
         self.publish('robot_awake_changed', '1' if is_awake else '0')
         print('robotIsWakeUp: ' + str(is_awake))
         self.reconnect_event('robotIsWakeUp')
-
-    def on_stiffness_changed(self, event_name, stiffness):
-        self.disconnect_event('BodyStiffnessChanged')
-        stiffness = str(int(stiffness))
-        self.publish('robot_stiffness_changed', stiffness)
-        print('BodyStiffnessChanged: ' + stiffness)
-        self.reconnect_event('BodyStiffnessChanged')
 
     def on_battery_charge_changed(self, event_name, percentage):
         self.disconnect_event('BatteryChargeChanged')
