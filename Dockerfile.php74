@@ -1,4 +1,4 @@
-FROM devilbox/php-fpm:7.4-work-0.122
+FROM devilbox/php-fpm:7.4-work-0.123
 
 RUN apt-get -y update
 RUN apt-get install -y --fix-missing sshpass \
