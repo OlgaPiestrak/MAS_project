@@ -24,7 +24,7 @@ class HomeController
     public function get_devices(Request $request, Response $response, $args)
     {
         $dir = __DIR__;
-        echo self::exec("python2 -u $dir/get_devices.py");
+        echo self::exec("python $dir/get_devices.py");
     }
 
     public function set_devices(Request $request, Response $response, $args)
@@ -49,7 +49,7 @@ class HomeController
             return $response->withStatus(422, 'Please select a camera device first.');
         } else {
             $dir = __DIR__;
-            echo self::exec("python2 -u $dir/feed.py --identifier $identifier --command start");
+            echo self::exec("python $dir/feed.py --identifier $identifier --command start");
         }
     }
     
@@ -61,7 +61,7 @@ class HomeController
             return $response->withStatus(422, 'Please select a camera device first.');
         } else {
             $dir = __DIR__;
-            echo self::exec("python2 -u $dir/feed.py --identifier $identifier --command stop");
+            echo self::exec("python $dir/feed.py --identifier $identifier --command stop");
         }
     }
     
@@ -79,7 +79,7 @@ class HomeController
             } else {
                 $data = $params['data'] ?? '';
                 $dir = __DIR__;
-                echo self::exec("python2 -u $dir/commands.py --identifier $identifier --command $cmd --data \"$data\"");
+                echo self::exec("python $dir/commands.py --identifier $identifier --command $cmd --data \"$data\"");
             }
         }
     }
@@ -100,7 +100,7 @@ class HomeController
         }
 
         $dir = __DIR__;
-        echo self::exec("python2 -u $dir/register_user.py --username $username --password $password");
+        echo self::exec("python $dir/register_user.py --username $username --password $password");
     }
 
     /**

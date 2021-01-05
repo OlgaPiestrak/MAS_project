@@ -268,10 +268,10 @@ services:
   # Dialogflow service
   # ------------------------------------------------------------
   dialogflow:
-    image: java8
+    image: java15
     build:
       context: .
-      dockerfile: Dockerfile.java8
+      dockerfile: Dockerfile.java15
     hostname: dialogflow
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
@@ -296,10 +296,10 @@ services:
   # Web Server service
   # ------------------------------------------------------------
   webserver:
-    image: java8
+    image: java15
     build:
       context: .
-      dockerfile: Dockerfile.java8
+      dockerfile: Dockerfile.java15
     hostname: webserver
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
@@ -356,17 +356,17 @@ services:
   # Robot Memory service
   # ------------------------------------------------------------
   robot_memory:
-    image: python2
+    image: python3
     build:
       context: .
-      dockerfile: Dockerfile.python2
+      dockerfile: Dockerfile.python3
     hostname: robot_memory
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
       - ./.env
 
     working_dir: /robot_memory
-    command: python2 robot_memory_factory.py
+    command: python robot_memory_factory.py
     volumes:
       - ./cbsr/robot_memory:/robot_memory:ro${MOUNT_OPTIONS}
 
@@ -384,10 +384,10 @@ services:
   # Stream Video service
   # ------------------------------------------------------------
   stream_video:
-    image: java8
+    image: java15
     build:
       context: .
-      dockerfile: Dockerfile.java8
+      dockerfile: Dockerfile.java15
     hostname: stream_video
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
