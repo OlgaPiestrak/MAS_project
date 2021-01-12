@@ -23,9 +23,10 @@ $(function () {
     				favs.append(button);
     				$('#'+id).on('click', function() {
     					var type = 'robot';
-    					if(entry.action.startsWith('action_say')) {
+    					if(entry.action.startsWith('action_say') || entry.action.startsWith('action_speech') ||
+    	    					|| entry.action.startsWith('audio_') || entry.action === 'action_stop_talking') {
     						type = 'speaker';
-    					} else if(entry.action.startsWith('tablet')) {
+    					} else if(entry.action.startsWith('tablet_') || entry.action.startsWith('render_')) {
     						type = 'tablet';
     						tabletOpen = false;
     					}
