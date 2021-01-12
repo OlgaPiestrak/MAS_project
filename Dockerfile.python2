@@ -1,8 +1,0 @@
-FROM python:2.7.18-slim
-
-ENV PYTHONUNBUFFERED=1
-
-RUN pip2 install --no-cache-dir --upgrade pip redis~=3.5 hiredis~=1.1 simplejson~=3.17
-
-COPY cbsr/common_python /tmp
-RUN cd /tmp && python setup.py install && rm -rf *
