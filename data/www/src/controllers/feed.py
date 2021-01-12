@@ -21,15 +21,12 @@ if __name__ == '__main__':
     else:
         redis = Redis(host=host, ssl=True, password=password)
 
-    pipe = redis.pipeline()
     if args.command == 'startcam':
-        pipe.publish('stream_video', args.identifier)
-        pipe.publish(args.identifier + '_action_video', '0')
+        redis.publish(args.identifier + '_action_video', '0')
     elif args.command == 'startmic':
-        pipe.publish(args.identifier + '_action_audio', '0')
+        redis.publish(args.identifier + '_action_audio', '0')
     elif args.command == 'stopcam':
-        pipe.publish(args.identifier + '_action_video', '-1')
+        redis.publish(args.identifier + '_action_video', '-1')
     elif args.command == 'stopmic':
-        pipe.publish(args.identifier + '_action_audio', '-1')
-    pipe.execute()
+        redis.publish(args.identifier + '_action_audio', '-1')
     redis.close()

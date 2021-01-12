@@ -1,33 +1,50 @@
 <script type="text/javascript">
 var tabletOpen = false;
-var audioPlayer = null, audioSocket = null;
+var audioPlayer = null, audioSocket = null, videoObject = null, videoSocket = null;
 $(function () {
     $('#startFeed').on('click', function() {
-        $.post('start_cam_feed', {id:(username+'-'+devices['cam'])}, function(){
-        	setTimeout(function(){$('#feed').attr('src', 'http://127.0.0.1:8002');}, 100);
-        });
-        $.post('start_mic_feed', {id:(username+'-'+devices['mic'])}, function(){
-        	audioPlayer = new PCMPlayer({sampleRate: 16000, flushingTime: 50});
-    	   	var audioSocket = new WebSocket('ws://127.0.0.1:8003');
-    	   	audioSocket.binaryType = 'arraybuffer';
-    	   	audioSocket.onopen = function() {
-    	   		audioSocket.send(username+'-'+devices['mic']);
-    		};
-    	   	audioSocket.onmessage = function(event) {
-    	    	var audioData = new Uint8Array(event.data);
-    	    	audioPlayer.feed(audioData);
-    	   	};
-    	   	audioSocket.onerror = function(error) {
-    			if(error.message) alert(error.message);
-    		};
-        });
+        var videoDevice = username+'-'+devices['cam'];
+	   	var videoFeed = $('#feed');
+	   	var videoSocket = new WebSocket('ws://127.0.0.1:8002');
+	   	videoSocket.binaryType = 'arraybuffer';
+	   	videoSocket.onopen = function() {
+	   		videoSocket.send(videoDevice);
+	        $.post('start_cam_feed', {id:videoDevice});
+		};
+		videoSocket.onmessage = function(event) {
+	    	var imageData = new Uint8Array(event.data);
+	    	var imageBlob = new Blob([imageData.buffer]);
+	    	if(videoObject) URL.revokeObjectURL(videoObject)
+	    	videoObject = URL.createObjectURL(imageBlob);
+	    	videoFeed.attr('src', videoObject);
+	   	};
+	   	videoSocket.onerror = function(error) {
+			if(error.message) alert(error.message);
+		};
+        var audioDevice = username+'-'+devices['mic'];
+    	audioPlayer = new PCMPlayer({sampleRate: 16000, flushingTime: 50});
+	   	var audioSocket = new WebSocket('ws://127.0.0.1:8003');
+	   	audioSocket.binaryType = 'arraybuffer';
+	   	audioSocket.onopen = function() {
+	   		audioSocket.send(audioDevice);
+	        $.post('start_mic_feed', {id:audioDevice});
+		};
+	   	audioSocket.onmessage = function(event) {
+	    	var audioData = new Uint8Array(event.data);
+	    	if(audioPlayer) audioPlayer.feed(audioData);
+	   	};
+	   	audioSocket.onerror = function(error) {
+			if(error.message) alert(error.message);
+		};
     });
     $('#stopFeed').on('click', function() {
         $.post('stop_cam_feed', {id:(username+'-'+devices['cam'])});
-    	$('#feed').attr('src', '');
+    	if(videoSocket) { videoSocket.close(); videoSocket = null; }
+    	if(videoObject) { URL.revokeObjectURL(videoObject); videoObject = null; }
+    	setTimeout(function(){$('#feed').attr('src', '')}, 1000);
         $.post('stop_mic_feed', {id:(username+'-'+devices['mic'])});
-    	if(audioSocket) audioSocket.close();
-    	if(audioPlayer) audioPlayer.destroy();
+    	if(audioSocket) { audioSocket.close(); audioSocket = null; }
+    	if(audioPlayer) { audioPlayer.destroy(); audioPlayer = null; }
     });
     var idle = false;
     $('#toggleIdle').on('click', function() {
