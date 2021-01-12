@@ -410,6 +410,37 @@ services:
 
     depends_on:
       - redis
+  
+  # ------------------------------------------------------------
+  # Stream Audio service
+  # ------------------------------------------------------------
+  stream_audio:
+    image: java15
+    build:
+      context: .
+      dockerfile: Dockerfile.java15
+    hostname: stream_audio
+    user: "${NEW_UID}:${NEW_GID}"
+    env_file:
+      - ./.env
+
+    working_dir: /stream_audio
+    command: java -jar stream-audio.jar
+    volumes:
+      - ./cbsr/stream_audio:/stream_audio:ro${MOUNT_OPTIONS}
+
+    tty: true
+    stdin_open: false
+
+    ports:
+      - "8003:8003"
+
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.20
+
+    depends_on:
+      - redis
 
 ################################################################################
 # NETWORK

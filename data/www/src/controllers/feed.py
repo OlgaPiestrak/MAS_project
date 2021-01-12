@@ -8,8 +8,8 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--username', type=str, help='Username', default='default')
     parser.add_argument('--password', type=str, help='Password', default='changemeplease')
-    parser.add_argument('--identifier', type=str, help='The camera device identifier')
-    parser.add_argument('--command', type=str, help='Start or Stop')
+    parser.add_argument('--identifier', type=str, help='The device identifier')
+    parser.add_argument('--command', type=str, help='startcam, startmic, stopcam, stopmic')
     args = parser.parse_args()
 
     host = getenv('DB_IP')
@@ -21,11 +21,15 @@ if __name__ == '__main__':
     else:
         redis = Redis(host=host, ssl=True, password=password)
 
-    if args.command == 'start':
-        pipe = redis.pipeline()
+    pipe = redis.pipeline()
+    if args.command == 'startcam':
         pipe.publish('stream_video', args.identifier)
         pipe.publish(args.identifier + '_action_video', '0')
-        pipe.execute()
-    else:
-        redis.publish(args.identifier + '_action_video', '-1')
+    elif args.command == 'startmic':
+        pipe.publish(args.identifier + '_action_audio', '0')
+    elif args.command == 'stopcam':
+        pipe.publish(args.identifier + '_action_video', '-1')
+    elif args.command == 'stopmic':
+        pipe.publish(args.identifier + '_action_audio', '-1')
+    pipe.execute()
     redis.close()

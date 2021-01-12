@@ -41,7 +41,7 @@ class HomeController
         return json_encode($devices);
     }
 
-    public function start_feed(Request $request, Response $response, $args)
+    public function start_cam_feed(Request $request, Response $response, $args)
     {
         $params = $request->getParams();
         $identifier = $params['id'] ?? '';
@@ -49,11 +49,23 @@ class HomeController
             return $response->withStatus(422, 'Please select a camera device first.');
         } else {
             $dir = __DIR__;
-            echo self::exec("python $dir/feed.py --identifier $identifier --command start");
+            echo self::exec("python $dir/feed.py --identifier $identifier --command startcam");
         }
     }
     
-    public function stop_feed(Request $request, Response $response, $args)
+    public function start_mic_feed(Request $request, Response $response, $args)
+    {
+        $params = $request->getParams();
+        $identifier = $params['id'] ?? '';
+        if (empty($identifier)) {
+            return $response->withStatus(422, 'Please select a microphone device first.');
+        } else {
+            $dir = __DIR__;
+            echo self::exec("python $dir/feed.py --identifier $identifier --command startmic");
+        }
+    }
+    
+    public function stop_cam_feed(Request $request, Response $response, $args)
     {
         $params = $request->getParams();
         $identifier = $params['id'] ?? '';
@@ -61,10 +73,21 @@ class HomeController
             return $response->withStatus(422, 'Please select a camera device first.');
         } else {
             $dir = __DIR__;
-            echo self::exec("python $dir/feed.py --identifier $identifier --command stop");
+            echo self::exec("python $dir/feed.py --identifier $identifier --command stopcam");
         }
     }
     
+    public function stop_mic_feed(Request $request, Response $response, $args)
+    {
+        $params = $request->getParams();
+        $identifier = $params['id'] ?? '';
+        if (empty($identifier)) {
+            return $response->withStatus(422, 'Please select a microphone device first.');
+        } else {
+            $dir = __DIR__;
+            echo self::exec("python $dir/feed.py --identifier $identifier --command stopmic");
+        }
+    }    
 
     public function command(Request $request, Response $response, $args)
     {

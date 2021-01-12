@@ -23,9 +23,7 @@ $(function() {
 		}
 	};
 	socket.onerror = function(error) {
-		if( error.message ) {
-			alert(error.message);
-		}
+		if( error.message ) alert(error.message);
 	};
 });
 $(window).on('unload', function() {
