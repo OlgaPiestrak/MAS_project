@@ -8,7 +8,6 @@ import face_recognition
 import numpy as np
 from PIL import Image
 from cbsr.service import CBSRservice
-from imutils.video import FPS
 
 
 class FaceRecognitionService(CBSRservice):
@@ -19,13 +18,11 @@ class FaceRecognitionService(CBSRservice):
         self.image_width = 0
         self.image_height = 0
         # Thread data
-        self.face_recognition_thread = None
         self.is_recognizing = False
         self.save_image = False
         self.is_image_available = False
         self.image_available_flag = Event()
         # Initialize face recognition data
-        self.fps = FPS().start()
         self.face_labels = []
         self.face_names = []
         self.face_count = []
@@ -141,4 +138,3 @@ class FaceRecognitionService(CBSRservice):
     def cleanup(self):
         self.image_available_flag.set()
         self.is_recognizing = False
-        self.fps.stop()
