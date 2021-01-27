@@ -99,7 +99,7 @@ class RobotMemoryService(CBSRservice):
 
     @staticmethod
     def get_data(message, correct_length, correct_format=''):
-        data = message['data'].split(';')
+        data = str(message['data']).split(';')
         if len(data) != correct_length:
             raise EntryIncorrectFormatError('Data does not have format ' + correct_format)
         return data

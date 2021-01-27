@@ -1,7 +1,6 @@
 from os import getenv
 from signal import pause, signal, SIGTERM, SIGINT
 from sys import exit
-from threading import Thread
 
 from redis import Redis
 
@@ -14,7 +13,7 @@ class CBSRfactory(object):
         self.redis = self.connect()
         print('Subscribing...')
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        self.pubsub.subscribe(**{self.get_connection_channel(): self.execute})
+        self.pubsub.subscribe(**{self.get_connection_channel(): self.start_service})
         self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.001)
 
         # Register cleanup handlers
@@ -38,11 +37,8 @@ class CBSRfactory(object):
         else:
             return Redis(host=host, ssl=True, password=password)
 
-    def execute(self, message):
-        t = Thread(target=self.start_service, args=(message['data'],))
-        t.start()
-
-    def start_service(self, data):
+    def start_service(self, message):
+        data = str(message['data'])
         if data in self.active:
             print('Reusing already running service for ' + data)
         else:
