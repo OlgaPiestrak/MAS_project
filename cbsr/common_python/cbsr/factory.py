@@ -38,7 +38,7 @@ class CBSRfactory(object):
             return Redis(host=host, ssl=True, password=password)
 
     def start_service(self, message):
-        data = str(message['data'])
+        data = message['data'].decode('utf-8')
         if data in self.active:
             print('Reusing already running service for ' + data)
         else:
