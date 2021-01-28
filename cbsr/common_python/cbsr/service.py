@@ -34,11 +34,21 @@ class CBSRservice(object):
     def check_if_alive(self):
         split = self.identifier.split('-')
         user = 'user:' + split[0]
-        device = split[1] + ':cam'
+        devices = []
+        for device_type in self.get_device_types():
+            devices.append(split[1] + ':' + device_type)
         while True:
             try:
-                score = self.redis.zscore(user, device)
-                if score >= (mktime(gmtime()) - 60):
+                pipe = self.redis.pipeline()
+                for device in devices:
+                    pipe.zscore(user, device)
+                found_one = False
+                one_minute = mktime(gmtime()) - 60
+                for score in pipe.execute():
+                    if score >= one_minute:
+                        found_one = True
+                        break
+                if found_one:
                     sleep(60.1)
                     continue
             except:
