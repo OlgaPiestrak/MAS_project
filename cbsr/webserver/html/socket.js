@@ -43,7 +43,7 @@ function updateSpeechText(input) {
 	$('.speech_text').html(input);
 }
 function vuLogo() {
-	$('.vu_logo').html('<img src="img/vu_logo.jpg" '+iconStyle+'>');
+	$('.vu_logo').html('<img src="img/vu_logo.png" '+iconStyle+'>');
 }
 function englishFlag() {
 	var englishFlag = $('.english_flag');
