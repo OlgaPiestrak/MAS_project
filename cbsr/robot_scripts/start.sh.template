@@ -14,7 +14,7 @@ done
 
 echo "Installing..."
 
-/usr/bin/pip install --user --upgrade pip
+/usr/bin/pip install --user --upgrade pip~=20.0
 ../.local/bin/pip install --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 pandas~=0.20
 /usr/bin/python setup.py install --user
 
