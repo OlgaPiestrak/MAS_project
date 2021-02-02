@@ -35,6 +35,8 @@ class CBSRdevice(object):
             pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
             pubsub.subscribe(**mapping)
             self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
+        else:
+            self.pubsub_thread = None
         identifier_thread = Thread(target=self.announce)
         identifier_thread.start()
 
