@@ -2,8 +2,8 @@ FROM python:2.7.18-slim
 
 ENV PYTHONUNBUFFERED=1
 
-RUN apt-get -y update
-RUN apt-get install -y --fix-missing \
+RUN apt-key adv --refresh-keys --keyserver hkp://keyserver.ubuntu.com:80 \
+	&& apt-get update && apt-get install -y --fix-missing \
     build-essential \
     cmake \
     gfortran \

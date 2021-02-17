@@ -1,5 +1,5 @@
 FROM openjdk:15.0.2-slim
 
-RUN apt-get -y update
-RUN apt-get install -y --fix-missing openssh-client \
+RUN apt-key adv --refresh-keys --keyserver hkp://keyserver.ubuntu.com:80 \
+	&& apt-get update && apt-get install -y --fix-missing openssh-client \
     && apt-get clean && rm -rf /tmp/* /var/tmp/*
