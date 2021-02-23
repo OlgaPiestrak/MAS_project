@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 [ ! -f audio_producer.pid ] || pkill -F audio_producer.pid
 [ ! -f action_consumer.pid ] || pkill -F action_consumer.pid
 [ ! -f audio_consumer.pid ] || pkill -F audio_consumer.pid
-[ ! -f tablet_consumer.pid ] || pkill -F tablet_consumer.pid
+[ ! -f tablet.pid ] || pkill -F tablet.pid
 
 rm -f *.pid *.log
 echo "Disconnected!"

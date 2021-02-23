@@ -1,7 +1,7 @@
 FROM devilbox/php-fpm:7.4-work-0.123
 
 RUN apt-key adv --refresh-keys --keyserver hkp://keyserver.ubuntu.com:80 \
-	&& apt-get update && apt-get install -y --fix-missing sshpass \
+	&& apt-get update && apt-get install -y sshpass \
     && apt-get clean && rm -rf /tmp/* /var/tmp/*
 
 RUN pip install --no-cache-dir --upgrade pip redis~=3.5 hiredis~=1.1

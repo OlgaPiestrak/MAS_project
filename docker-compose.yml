@@ -442,6 +442,34 @@ services:
     depends_on:
       - redis
 
+  # ------------------------------------------------------------
+  # Beamforming service
+  # ------------------------------------------------------------
+  beamforming:
+    image: python3
+    build:
+      context: .
+      dockerfile: Dockerfile.python3
+    hostname: beamforming
+    user: "${NEW_UID}:${NEW_GID}"
+    env_file:
+      - ./.env
+
+    working_dir: /beamforming
+    command: python beamforming_factory.py
+    volumes:
+      - ./cbsr/beamforming:/beamforming:ro${MOUNT_OPTIONS}
+
+    tty: true
+    stdin_open: false
+
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.21
+
+    depends_on:
+      - redis
+
 ################################################################################
 # NETWORK
 ################################################################################

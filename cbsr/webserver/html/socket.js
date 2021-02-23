@@ -3,7 +3,6 @@ $(function() {
 	socket = new WebSocket('wss://' + window.location.hostname + ':8001');
 	socket.onopen = function() {
 		$(document.body).html('*');
-		socket.send(getParameter('id'));
 	};
 	socket.onmessage = function(event) {
 		var data = JSON.parse(event.data);
@@ -24,6 +23,9 @@ $(function() {
 	};
 	socket.onerror = function(error) {
 		if( error.message ) alert(error.message);
+	};
+	socket.onclose = function() {
+		$(document.body).html('');
 	};
 });
 $(window).on('unload', function() {
@@ -56,7 +58,7 @@ function englishFlag() {
 function activateButtons() {
 	$(':button').click(function() {
 		var buttonValue = $(this).html();
-		socket.send('tablet_answer|'+buttonValue);
+		socket.send('browser_button|'+buttonValue);
 	});
 }
 function chatBox() {
@@ -69,15 +71,4 @@ function chatBox() {
 		input.val('');
 		e.preventDefault();
 	});
-}
-
-function getParameter(sParam) {
-	var sPageURL = window.location.search.substring(1);
-	var sURLVariables = sPageURL.split('&');
-	for( var i = 0; i < sURLVariables.length; i++ ) {
-		var sParameterName = sURLVariables[i].split('=');
-		if( sParameterName[0] == sParam ) {
-			return sParameterName[1];
-		}
-	}
 }

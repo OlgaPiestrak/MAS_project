@@ -1,111 +1,40 @@
-from os import system
-from threading import Thread
+from argparse import ArgumentParser
 
-PAN_CENTER = 0.0
-FULL_VOLUME = 1.0
+from cbsr.device import CBSRdevice
+from qi import Application
 
 
-class Tablet(object):
-    """
-    Tablet module to communicate with Pepper's tablet.
-    Only used as an import.
-    """
+class Tablet(CBSRdevice):
+    def __init__(self, session, server, username, password, profiling):
+        super(Tablet, self).__init__(server, username, password, profiling)
 
-    def __init__(self, session, server_ip, server_port=8000):
-        self.server_ip = server_ip
-        self.server_port = server_port
-        self.service = session.service('ALTabletService')
-        self.service.resetTablet()
-        self.service.enableWifi()
+        tablet = session.service('ALTabletService')
+        tablet.resetTablet()
+        tablet.enableWifi()
 
-        self._audio = session.service('ALAudioPlayer')
-        self._audio.stopAll()
-        self._audio_thread = None
-        self._audio.setPanorama(PAN_CENTER)
-        self.set_volume(FULL_VOLUME)
+        url = 'https://' + server + ':8000/index.html'
+        tablet.showWebview(url)
 
-    def _play_audio_thread(self, url):
-        try:
-            self._audio.playWebStream(url, self._audio.getMasterVolume(), PAN_CENTER)
-        except RuntimeError:
-            print('Invalid url: ' + url)
 
-    @staticmethod
-    def settings():
-        """Open the tablet settings GUI"""
-        # There is no API call for this so the qicli utility has to be used
-        # directly.
-        system('qicli call ALTabletService._openSettings')
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('--server', type=str, help='Server IP address')
+    parser.add_argument('--username', type=str, help='Username')
+    parser.add_argument('--password', type=str, help='Password')
+    parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
+    args = parser.parse_args()
 
-    def url_for(self, resource, res_type):
-        """Create a URL for a static resource"""
-        if not resource.startswith('https'):
-            resource = 'https://{}:{}/{}/{}'.format(self.server_ip, self.server_port, res_type, resource)
-        return resource
-
-    def set_volume(self, value):
-        """Set the tablet's master volume"""
-        if not 0 <= value <= 1:
-            raise ValueError('Volume must be between 0 and 100%')
-        self._audio.setMasterVolume(value)
-
-    def audio_is_playing(self):
-        """Check if there is audio playing"""
-        try:
-            return self._audio_thread.is_alive()
-        except AttributeError:
-            return self._audio_thread is not None
-
-    def play_audio(self, url):
-        """Play audio through the robot's speakers"""
-        if not self.audio_is_playing():
-            url = self.url_for(url, 'audio')
-            self._audio_thread = Thread(target=self._play_audio_thread, args=(url,))
-            self._audio_thread.daemon = True
-            self._audio_thread.start()
-
-    def stop_audio(self):
-        """Stop any currently playing audio"""
-        if self.audio_is_playing():
-            self._audio.stopAll()
-            self._audio_thread.join()
-            self._audio_thread = None
-
-    def open_url(self, url=''):
-        """
-        Show the browser and load the supplied URL. If no URL is passed to
-        the function, the last shown URL is loaded.
-        """
-        if not url:
-            self.service.showWebview()
-        else:
-            self.service.showWebview(url)
-
-    def show_image(self, url, bg_color='#FFFFFF'):
-        """Load an image from a given URL"""
-        if not url:
-            print('Image URL cannot be empty')
-        else:
-            url = self.url_for(url, 'img')
-            self.service.setBackgroundColor(bg_color)
-            self.service.showImage(url)
-            print('Showing ', url)
-
-    def play_video(self, url):
-        """Play video on the tablet"""
-        if not url:
-            print('Video URL cannot be empty')
-        else:
-            url = self.url_for(url, 'video')
-            self.service.playVideo(url)
-            print('Playing ', url)
-
-    def reload(self):
-        """Reload the current page"""
-        # 'True' means to bypass local cache
-        self.service.reloadPage(True)
-
-    def hide(self):
-        """Hide the web browser"""
-        self.service.hide()
-        print('Hiding view')
+    my_name = 'Tablet'
+    try:
+        app = Application([my_name])
+        app.start()  # initialise
+        tablet = Tablet(session=app.session, server=args.server, username=args.username,
+                        password=args.password, profiling=args.profile)
+        # session_id = app.session.registerService(name, tablet)
+        app.run()  # blocking
+        tablet.shutdown()
+        # app.session.unregisterService(session_id)
+    except Exception as err:
+        print('Cannot connect to Naoqi: ' + err.message)
+    finally:
+        exit()

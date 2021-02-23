@@ -1,6 +1,6 @@
 FROM python:3.9.1
 
-RUN pip install --no-cache-dir --upgrade pip redis~=3.5 hiredis~=1.1 simplejson~=3.17
+RUN pip install --no-cache-dir --upgrade pip redis~=3.5 hiredis~=1.1 simplejson~=3.17 numpy~=1.19 scipy~=1.6 pyroomacoustics~=0.4 Cython~=0.29 pybind11~=2.6
 
 COPY cbsr/common_python /tmp
 RUN cd /tmp && python setup.py install && rm -rf *

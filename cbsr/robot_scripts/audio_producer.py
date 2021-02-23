@@ -6,11 +6,16 @@ from time import sleep
 from cbsr.device import CBSRdevice
 from qi import Application
 
+SAMPLE_RATE = 16000
+
 
 class SoundProcessingModule(CBSRdevice):
     def __init__(self, session, name, server, username, password, profiling):
         self.audio_service = session.service('ALAudioDevice')
         self.module_name = name
+        self.channel_index = 3  # front microphone
+        self.sample_rate = 16000
+        self.audio_channel = 'audio_stream'
         self.index = -1
         self.is_robot_listening = False
 
@@ -27,7 +32,7 @@ class SoundProcessingModule(CBSRdevice):
             self.stop_listening()
 
     def execute(self, message):
-        data = float(message['data'])  # only subscribed to 1 topic
+        data = float(message['data'])
         if data >= 0:
             if self.is_robot_listening:
                 print('Already listening!')
@@ -43,11 +48,24 @@ class SoundProcessingModule(CBSRdevice):
         self.index += 1
         self.is_robot_listening = True
 
-        # clear any previously stored audio
-        self.redis.delete(self.get_full_channel('audio_stream'))
+        # clear any previously stored audio and fetch the channel config
+        pipe = self.redis.pipeline()
+        pipe.delete(self.get_full_channel(self.audio_channel))
+        pipe.get(self.get_full_channel('audio_channels'))
+        result = pipe.execute()
+        if result[1] == '4':
+            print('Using 48kHz on 4 channels...')
+            self.channel_index = 0  # all microphones
+            self.sample_rate = 48000
+            self.audio_channel = 'audio_stream_multi'
+        else:
+            print('Using 16kHz on 1 channel...')
+            self.channel_index = 3  # front microphone
+            self.sample_rate = 16000
+            self.audio_channel = 'audio_stream'
 
-        # ask for the front microphone signal sampled at 16kHz and subscribe to the module
-        self.audio_service.setClientPreferences(self.module_name, 16000, 3, 0)
+        # ask for the correct microphone signal subscribe to the module
+        self.audio_service.setClientPreferences(self.module_name, self.sample_rate, self.channel_index, 0)
         self.audio_service.subscribe(self.module_name)
 
         print('Subscribed, listening...')
@@ -74,7 +92,7 @@ class SoundProcessingModule(CBSRdevice):
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
         audio = bytes(inputBuffer)
         send_audio_start = self.profiling_start()
-        self.redis.rpush(self.get_full_channel('audio_stream'), audio)
+        self.redis.rpush(self.get_full_channel(self.audio_channel), audio)
         self.profiling_end('SEND_AUDIO', send_audio_start)
 
 

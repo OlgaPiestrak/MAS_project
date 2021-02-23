@@ -37,14 +37,22 @@ class CBSRdevice(object):
             self.pubsub_thread = pubsub.run_in_thread(sleep_time=0.001)
         else:
             self.pubsub_thread = None
-        identifier_thread = Thread(target=self.announce)
-        identifier_thread.start()
+        device_type = self.get_device_type()
+        if device_type:
+            identifier_thread = Thread(target=self.announce, args=(device_type,))
+            identifier_thread.start()
 
     def get_device_type(self):
+        """
+        :rtype: string
+        """
         return None  # TO IMPLEMENT
 
     def get_channel_action_mapping(self):
-        return {}  # TO IMPLEMENT
+        """
+        :rtype: object
+        """
+        return None  # TO IMPLEMENT
 
     def cleanup(self):
         pass  # TO IMPLEMENT
@@ -55,9 +63,9 @@ class CBSRdevice(object):
     def get_channel_name(self, full_channel):
         return full_channel[self.cutoff:]
 
-    def announce(self):
+    def announce(self, device_type):
         user = 'user:' + self.username
-        device = self.device + ':' + self.get_device_type()
+        device = self.device + ':' + device_type
         while self.running:
             self.redis.zadd(user, {device: time()})
             sleep(59.9)
