@@ -268,10 +268,7 @@ services:
   # Dialogflow service
   # ------------------------------------------------------------
   dialogflow:
-    image: java15
-    build:
-      context: .
-      dockerfile: Dockerfile.java15
+    image: openjdk:${JAVA}-slim
     hostname: dialogflow
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
@@ -296,10 +293,7 @@ services:
   # Web Server service
   # ------------------------------------------------------------
   webserver:
-    image: java15
-    build:
-      context: .
-      dockerfile: Dockerfile.java15
+    image: openjdk:${JAVA}-slim
     hostname: webserver
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
@@ -384,10 +378,7 @@ services:
   # Stream Video service
   # ------------------------------------------------------------
   stream_video:
-    image: java15
-    build:
-      context: .
-      dockerfile: Dockerfile.java15
+    image: openjdk:${JAVA}-slim
     hostname: stream_video
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
@@ -415,10 +406,7 @@ services:
   # Stream Audio service
   # ------------------------------------------------------------
   stream_audio:
-    image: java15
-    build:
-      context: .
-      dockerfile: Dockerfile.java15
+    image: openjdk:${JAVA}-slim
     hostname: stream_audio
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
