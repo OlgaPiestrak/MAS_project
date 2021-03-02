@@ -1,6 +1,5 @@
-var socket = null;
 $(function() {
-	socket = new WebSocket('wss://' + window.location.hostname + ':8001');
+	var socket = new SockJS('https://' + window.location.hostname + ':8001');
 	socket.onopen = function() {
 		$(document.body).html('*');
 	};
@@ -27,9 +26,6 @@ $(function() {
 	socket.onclose = function() {
 		$(document.body).html('');
 	};
-});
-$(window).on('unload', function() {
-	socket.close();
 });
 
 var iconStyle = 'style="height:10vh"';
