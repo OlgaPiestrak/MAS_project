@@ -12,6 +12,7 @@ CHANNELS = 4
 SAMPLE_RATE = 48000
 WINDOW_SIZE = 2 ** 12
 WINDOW_SIZE_FRAME = 2 ** 8
+TWELVE_HOURS = 60 * 60 * 12
 
 
 class BeamformingService(CBSRservice):
@@ -24,7 +25,7 @@ class BeamformingService(CBSRservice):
         self.audio_receive_topic = self.get_full_channel('audio_stream_multi')
         self.audio_send_topic = self.get_full_channel('audio_stream')
 
-        self.redis.set(self.get_full_channel('audio_channels'), CHANNELS)
+        self.redis.setex(self.get_full_channel('audio_channels'), TWELVE_HOURS, CHANNELS)
 
     def get_device_types(self):
         return ['mic']

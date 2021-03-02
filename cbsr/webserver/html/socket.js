@@ -1,14 +1,15 @@
 var socket = null;
-$(function() {
-	$(document.body).html('+');
+$(window).on('load', function() {
+	var body = $(document.body);
+	body.html('+');
 	socket = new WebSocket('wss://' + window.location.hostname + ':8001');
 	socket.onopen = function() {
-		$(document.body).html('*');
+		body.html('*');
 	};
 	socket.onmessage = function(event) {
 		var data = JSON.parse(event.data);
 		if( data.chan == 'render_html' ) {
-			$(document.body).html(data.msg);
+			body.html(data.msg);
 			updateListeningIcon('ListeningDone');
 			vuLogo();
 			englishFlag();
@@ -27,7 +28,7 @@ $(function() {
 		else alert(error);
 	};
 	socket.onclose = function() {
-		$(document.body).html('');
+		body.html('');
 	};
 });
 $(window).on('unload', function() {
