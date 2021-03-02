@@ -14,7 +14,11 @@ done
 
 echo "Installing..."
 
-/usr/bin/pip install --user --upgrade pip==20.3.4
+PIP="20.3.4"
+if ! ../.local/bin/pip -V | grep -q "$PIP"; then
+    /usr/bin/pip install --user --upgrade pip==$PIP
+fi
+
 ../.local/bin/pip install --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 pandas~=0.20
 /usr/bin/python setup.py install --user
 
