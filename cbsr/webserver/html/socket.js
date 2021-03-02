@@ -1,5 +1,7 @@
+var socket = null;
 $(function() {
-	var socket = new SockJS('https://' + window.location.hostname + ':8001');
+	$(document.body).html('+');
+	socket = new WebSocket('wss://' + window.location.hostname + ':8001');
 	socket.onopen = function() {
 		$(document.body).html('*');
 	};
@@ -22,10 +24,14 @@ $(function() {
 	};
 	socket.onerror = function(error) {
 		if( error.message ) alert(error.message);
+		else alert(error);
 	};
 	socket.onclose = function() {
 		$(document.body).html('');
 	};
+});
+$(window).on('unload', function() {
+	if( socket ) socket.close();
 });
 
 var iconStyle = 'style="height:10vh"';
