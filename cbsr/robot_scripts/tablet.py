@@ -8,12 +8,13 @@ class Tablet(CBSRdevice):
     def __init__(self, session, server, username, password, profiling):
         super(Tablet, self).__init__(server, username, password, profiling)
 
-        tablet = session.service('ALTabletService')
-        tablet.resetTablet()
-        tablet.enableWifi()
+        print('Going to connect to the ALTabletService; this will always print a false "Connection refused" exception!')
+        tablet_service = session.service('ALTabletService')
+        tablet_service.resetTablet()
+        tablet_service.enableWifi()
 
         url = 'https://' + server + ':8000/index.html'
-        tablet.showWebview(url)
+        tablet_service.showWebview(url)
 
 
 if __name__ == '__main__':
