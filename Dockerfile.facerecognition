@@ -31,7 +31,7 @@ RUN cd ~ && \
     cd dlib/ && \
     python2 setup.py install
 
-RUN pip2 install --no-cache-dir --upgrade pip \
+RUN pip2 install --no-cache-dir --upgrade --prefer-binary \
     redis~=3.5 \
 	hiredis~=1.1 \
 	opencv-python-headless~=4.2.0 \
