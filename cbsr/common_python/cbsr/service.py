@@ -31,12 +31,18 @@ class CBSRservice(object):
     def get_full_channel(self, channel_name):
         return self.identifier + '_' + channel_name
 
+    def get_user_id(self):
+        return self.identifier.split('-')[0]
+
+    def get_device_id(self):
+        return self.identifier.split('-')[1]
+
     def check_if_alive(self):
-        split = self.identifier.split('-')
-        user = 'user:' + split[0]
+        user = 'user:' + self.get_user_id()
+        device_id = self.get_device_id()
         devices = []
         for device_type in self.get_device_types():
-            devices.append(split[1] + ':' + device_type)
+            devices.append(device_id + ':' + device_type)
         while True:
             try:
                 pipe = self.redis.pipeline()
