@@ -18,16 +18,13 @@ $(function () {
 					var header = '<h6 class="w-100 mt-1">'+entry.text+'</h6>';
 					favs.append(header);
 				} else if(entry.type === 'button' || entry.type === 'field') {
+					var form = '<form id="fav'+i+'">';
 					var isField = (entry.type === 'field');
-					if(isField) {
-						var input = '<input type="text" class="form-control">';
-						favs.append(input);
-					}
-    				var id = 'fav'+i;
-    				var style = entry.hasOwnProperty('style') ? entry.style : 'primary';
-    				var button = '<button type="submit" class="btn btn-'+style+' ml-1 mb-1" id="'+id+'">'+entry.name+'</button>';
-    				favs.append(button);
-    				$('#'+id).on('click', function() {
+					if(isField) form += '<input type="text" class="form-control">';
+    				var buttonStyle = entry.hasOwnProperty('style') ? entry.style : 'primary';
+    				form += '<button type="submit" class="btn btn-'+buttonStyle+' ml-1 mb-1">'+entry.name+'</button>';
+    				favs.append(form+'</form>');
+    				$('#fav'+i).on('click', ':submit', function() {
     					var type = 'robot';
     					if(entry.action.startsWith('action_say') || entry.action.startsWith('action_speech') ||
     	    					entry.action.startsWith('audio_') || entry.action === 'action_stop_talking') {
@@ -38,6 +35,7 @@ $(function () {
     					var data = isField ? $(this).prev().val() : entry.data;
     					$.post('command', {id:(username+'-'+devices[type]), cmd:entry.action, data:data});
     					if(isField) $(this).prev().val('');
+    					return false;
     				});
 				}
 			});
