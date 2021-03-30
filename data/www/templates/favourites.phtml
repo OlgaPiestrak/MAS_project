@@ -13,11 +13,16 @@ $(function () {
 			var favs = $('#favs');
 			favs.off();
 			favs.empty();
-			$.each(config, function(i,entry) {
-				if(entry.type == 'header') {
+			$.each(config, function(i, entry) {
+				if(entry.type === 'header') {
 					var header = '<h6 class="w-100 mt-1">'+entry.text+'</h6>';
 					favs.append(header);
-				} else if(entry.type == 'button') {
+				} else if(entry.type === 'button' || entry.type === 'field') {
+					var isField = (entry.type === 'field');
+					if(isField) {
+						var input = '<input type="text" class="form-control">';
+						favs.append(input);
+					}
     				var id = 'fav'+i;
     				var style = entry.hasOwnProperty('style') ? entry.style : 'primary';
     				var button = '<button type="submit" class="btn btn-'+style+' ml-1 mb-1" id="'+id+'">'+entry.name+'</button>';
@@ -30,7 +35,9 @@ $(function () {
     					} else if(entry.action === 'render_html') {
     						type = 'browser';
     					}
-    					$.post('command', {id:(username+'-'+devices[type]), cmd:entry.action, data:entry.data});
+    					var data = isField ? $(this).prev().val() : entry.data;
+    					$.post('command', {id:(username+'-'+devices[type]), cmd:entry.action, data:data});
+    					if(isField) $(this).prev().val('');
     				});
 				}
 			});
