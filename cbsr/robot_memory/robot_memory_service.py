@@ -31,7 +31,7 @@ class RobotMemoryService(CBSRservice):
 
     def set_session(self, message):
         """Called to indicate that a new session has started.
-        If a interactant with interactant_id does not exist a new one is created."""
+        If an interactant with interactant_id does not exist a new one is created."""
         try:
             interactant_id, session_id = self.get_data(message, 2, correct_format='interactant_id;session_id')
             interactant_key = self.get_interactant_key(interactant_id)
