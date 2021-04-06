@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN cd ~ && \
     mkdir -p dlib && \
-    git clone -b 'v19.21' --single-branch https://github.com/davisking/dlib.git dlib/ && \
+    git clone -b 'v19.22' --single-branch https://github.com/davisking/dlib.git dlib/ && \
     cd dlib/ && \
     python2 setup.py install
 
