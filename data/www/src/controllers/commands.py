@@ -4,6 +4,12 @@ from os.path import abspath, dirname
 
 from redis import Redis
 
+import logging
+import os
+
+LOG_PATH = '/logs/log.csv'
+LOG_CMD = 'log'
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--username', type=str, help='Username', default='default')
@@ -22,5 +28,9 @@ if __name__ == '__main__':
     else:
         redis = Redis(host=host, ssl=True, password=password)
 
-    redis.publish(args.identifier + '_' + args.command, args.data)
+    logging.basicConfig(filename=os.path.dirname(os.path.realpath(__file__)) + LOG_PATH, filemode='a', format='%(asctime)s;%(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M')
+    logging.info(args.command + ';' + args.data)
+
+    if args.command != LOG_CMD:
+        redis.publish(args.identifier + '_' + args.command, args.data)
     redis.close()
