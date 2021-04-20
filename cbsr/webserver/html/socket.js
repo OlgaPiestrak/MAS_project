@@ -15,6 +15,7 @@ $(window).on('load', function() {
 			englishFlag();
 			activateButtons();
 			chatBox();
+			activateSorting();
 		} else if( data.chan == 'events' ) {
 			updateListeningIcon(data.msg);
 		} else if( data.chan == 'text_transcript' ) {
@@ -72,6 +73,28 @@ function chatBox() {
 		var text = input.val();
 		socket.send('action_chat|'+text);
 		input.val('');
+		e.preventDefault();
+	});
+}
+function activateSorting() {
+	var currentSort = [];
+	var sortItems = $('.sortitem');
+	sortItems.click(function() {
+		var $this = $(this);
+		var id = $this.attr('id');
+		var label = $this.find('.card-text');
+		if( currentSort.length > 0 && id == currentSort[currentSort.length-1] ) {
+			currentSort.pop();
+			label.html('');
+		} else if( label.html() == '' ) {
+			currentSort.push(id);
+			label.html(currentSort.length)
+		}
+	});
+	sortItems.parent().after('<form class="mt-3"><input type="submit" value="Klaar!"></form>');
+	$('form').submit(function(e) {
+		socket.send('browser_button|'+JSON.stringify(currentSort));
+		currentSort = [];
 		e.preventDefault();
 	});
 }
