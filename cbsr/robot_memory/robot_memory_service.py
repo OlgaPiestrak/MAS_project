@@ -128,8 +128,8 @@ class RobotMemoryService(CBSRservice):
 
     def set_dialog_history(self, message):
         try:
-            interactant_id, minidialog_id = self.get_data(message, 2, 'interactant_id;session_id;minidialog_id')
-            session_id = self.redis.hget(self.get_interactant_key(interactant_id), 'session_id')
+            interactant_id, minidialog_id = self.get_data(message, 2, 'interactant_id;minidialog_id')
+            session_id = self.redis.hget(self.get_interactant_key(interactant_id), 'session_id').decode('utf-8')
             key = self.get_interactant_key(interactant_id, 'dialoghistory:' + session_id)
             self.redis.rpush(key, minidialog_id)
             self.produce_event('DialogHistorySet')
@@ -139,9 +139,9 @@ class RobotMemoryService(CBSRservice):
     def get_dialog_history(self, message):
         try:
             interactant_id = self.get_data(message, 1, 'interactant_id')
-            session_id = self.redis.hget(self.get_interactant_key(interactant_id), 'session_id')
+            session_id = int(self.redis.hget(self.get_interactant_key(interactant_id), 'session_id').decode('utf-8'))
             with self.redis.pipeline() as pipe:
-                for session in range(1, int(session_id) + 1):
+                for session in range(1, session_id + 1):
                     key = self.get_interactant_key(interactant_id, 'dialoghistory:' + str(session))
                     pipe.lrange(key, 0, -1)
                 history = [[his.decode('utf-8') for his in superhis] if superhis else [] for superhis in pipe.execute()]
@@ -152,7 +152,7 @@ class RobotMemoryService(CBSRservice):
     def set_narrative_history(self, message):
         try:
             interactant_id, thread, position = self.get_data(message, 3, 'interactant_id;thread;position')
-            session_id = self.redis.hget(self.get_interactant_key(interactant_id), 'session_id')
+            session_id = int(self.redis.hget(self.get_interactant_key(interactant_id), 'session_id').decode('utf-8'))
             key = self.get_interactant_key(interactant_id, 'narrativehistory:' + thread)
             history_length = self.redis.llen(key)
             if history_length >= session_id:
@@ -172,9 +172,9 @@ class RobotMemoryService(CBSRservice):
             thread_names = []
             with self.redis.pipeline() as pipe:
                 for key in keys:
-                    thread_names.append(key.split(':')[-1])
+                    thread_names.append(key.decode('utf-8').split(':')[-1])
                     pipe.lindex(key, -1)
-                thread_positions = pipe.execute()
+                thread_positions = [pos.decode('utf-8') for pos in pipe.execute()]
             narrative_history = dict(zip(thread_names, thread_positions))
             self.produce_data('NarrativeHistory', narrative_history)
         except EntryIncorrectFormatError as err:
@@ -191,8 +191,8 @@ class RobotMemoryService(CBSRservice):
     def get_move_history(self, message):
         try:
             interactant_id = self.get_data(message, 1, 'interactant_id')
-            last_move = self.redis.get(self.get_interactant_key(interactant_id, 'movehistory'))
-            self.produce_data('MoveHistory', last_move.decode('utf-8'))
+            last_move = self.redis.get(self.get_interactant_key(interactant_id, 'movehistory')).decode('utf-8')
+            self.produce_data('MoveHistory', last_move)
         except EntryIncorrectFormatError as err:
             print(self.identifier + ' > Could not get move history due to: ' + str(err))
 
@@ -202,22 +202,27 @@ class RobotMemoryService(CBSRservice):
             dialog_keys = list(self.redis.scan_iter(self.get_interactant_key(interactant_id, 'dialoghistory:*')))
             threads = list(self.redis.scan_iter(self.get_interactant_key(interactant_id, 'narrativehistory:*')))
 
-            with self.redis.pipeline as pipe:
+            with self.redis.pipeline() as pipe:
                 if dialog_keys:
-                    dialog_his = [his for his in dialog_keys if int(his.split(':')[-1]) >= int(session_id)]
+                    dialog_his = [his for his in dialog_keys if int(his.decode('utf-8').split(':')[-1]) >= int(session_id)]
                     if dialog_his:
                         pipe.delete(*dialog_his)
-                for thread in threads:
-                    pipe.ltrim(thread, 0, int(session_id)-1)
+
+                if threads:
+                    if int(session_id) == 1:
+                        pipe.delete(*threads)
+                    else:
+                        for thread in threads:
+                            pipe.ltrim(thread, 0, int(session_id)-2)
                 pipe.execute()
             self.produce_event('HistoryCleared')
         except EntryIncorrectFormatError as err:
-            print(self.identifier + ' > Could not set dialog history due to: ' + str(err))
+            print(self.identifier + ' > Could not clear history due to: ' + str(err))
 
     def delete_interactant(self, message):
         try:
             # retrieve data from message
-            interactant_id = self.get_data(message, 1, correct_format='interactant_id')[0]
+            interactant_id = self.get_data(message, 1, correct_format='interactant_id')
             # get all entries attached to this interactant
             all_data = list(self.redis.scan_iter(self.get_interactant_key(interactant_id, '*')))
             # delete all entries and interactant
@@ -251,4 +256,6 @@ class RobotMemoryService(CBSRservice):
         data = message['data'].decode('utf-8').split(';')
         if len(data) != correct_length:
             raise EntryIncorrectFormatError('Data does not have format ' + correct_format)
+        if len(data) == 1:
+            return data[0]
         return data
