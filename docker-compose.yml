@@ -125,11 +125,12 @@ services:
 
     depends_on:
       - bind
+      - redis
 
   # ------------------------------------------------------------
-  # Web Server
+  # Web Server (Wizard-of-Oz)
   # ------------------------------------------------------------
-  httpd:
+  wizard:
     image: devilbox/apache-2.4:${HTTPD_SERVER}
     hostname: httpd
 
@@ -180,6 +181,7 @@ services:
     depends_on:
       - bind
       - php
+      - redis
 
   # ------------------------------------------------------------
   # Redis
@@ -203,10 +205,6 @@ services:
 
     volumes:
       - ./cfg/redis:/usr/local/etc/redis:rw${MOUNT_OPTIONS}
-
-    depends_on:
-      - php
-      - httpd
 
   # ------------------------------------------------------------
   # Face Recognition service
