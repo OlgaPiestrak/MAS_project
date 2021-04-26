@@ -52,15 +52,15 @@ class RobotMemoryService(CBSRservice):
     def add_entry(self, message):
         try:
             # retrieve data from message
-            interactant_id, entry_type, entry_data = self.get_data(message, 3, 'interactant_id;entry_name;entry')
-            # a interactant needs to exist to link the entry to.
-            interactant_key = self.get_interactant_key(interactant_id)
-            if not (self.redis.exists(interactant_key)):
-                raise InteractantDoesNotExistError('Interactant with ID ' + interactant_id + 'does not exist')
+            user_id, entry_key, entry_data = self.get_data(message, 3, 'user_id;entry_name;entry')
+            # a user needs to exist to link the entry to.
+            user_key = 'user:' + user_id
+            if not (self.redis.exists(user_key)):
+                raise InteractantDoesNotExistError('User with ID ' + user_key + 'does not exist')
 
             # generate the latest hash id for this particular entry type
-            count = self.redis.hincrby(interactant_key, 'entry_type:' + entry_type, 1)
-            hash_name = self.get_user_id() + ':' + interactant_id + ':entry:' + entry_type + ':' + str(count)
+            count = self.redis.hincrby(user_key, entry_key, 1)
+            hash_name = entry_key + ':' + user_id + ':' + str(count)
 
             # the supplied data needs to have the form a a dict.
             entry = {}
@@ -68,7 +68,7 @@ class RobotMemoryService(CBSRservice):
                 entry.update(item)
             entry.update({'datetime': str(datetime.now())})  # timestamp the entry
 
-            # store the entry dict as a hash in redis with hash name: user_id:interactant_id:entry:entry_type:entry_id
+            # store the entry dict as a hash in redis with hash name: entry_type:user_id:entry_id
             self.redis.hmset(hash_name, entry)
             self.produce_event('MemoryEntryStored')
         except(ValueError, SyntaxError, EntryIncorrectFormatError) as err:
