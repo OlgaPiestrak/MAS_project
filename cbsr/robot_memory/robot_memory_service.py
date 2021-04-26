@@ -124,7 +124,7 @@ class RobotMemoryService(CBSRservice):
         self.publish('memory_data', str(key) + ';' + str(value))
 
     def get_interactant_key(self, interactant_id):
-        return self.get_user_id() + ':interactant:' + interactant_id
+        return 'user:' + interactant_id
 
     @staticmethod
     def get_data(message, correct_length, correct_format=''):
