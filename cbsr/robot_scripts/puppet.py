@@ -79,16 +79,18 @@ class RobotPuppet(CBSRdevice):
                 joint_chains = loads(joint_chains)  # parse string json list to python list
                 if not (isinstance(joint_chains, list)):
                     raise ValueError('The supplied joints and chains should be formatted as a list e.g. ["Head", ...].')
-                self.motion.stiffnessInterpolation(joint_chains, 0.0, 1.0)  # set minimum stiffness ('puppet')
 
-                self.is_relaying_motion = True
-                self.relay_motion_thread = Thread(target=self.relay_motion, args=(joint_chains, float(framerate),))
-                self.relay_motion_thread.start()
-                self.produce('RelayMotionStarted')
+                if not self.is_relaying_motion:
+                    self.is_relaying_motion = True
+                    self.motion.stiffnessInterpolation(joint_chains, 0.0, 1.0)  # set minimum stiffness ('puppet')
+                    self.relay_motion_thread = Thread(target=self.relay_motion, args=(joint_chains, float(framerate),))
+                    self.relay_motion_thread.start()
+                    self.produce('RelayMotionStarted')
             elif message == 'stop':
-                self.is_relaying_motion = False
-                self.relay_motion_thread.join()
-                self.produce('RelayMotionDone')
+                if self.is_relaying_motion:
+                    self.is_relaying_motion = False
+                    self.relay_motion_thread.join()
+                    self.produce('RelayMotionDone')
             else:
                 raise ValueError('Command for action_relay_motion not recognized: ' + message)
         except ValueError as valerr:
@@ -107,14 +109,14 @@ class RobotPuppet(CBSRdevice):
         target_joints = self.generate_joint_list(joint_chains)
 
         # Initialize motion
+        sleep_time = 1.0 / framerate
         motion = {'robot': self.robot_type, 'motion': {}}
         for joint in target_joints:
             motion['motion'][joint] = {}
             motion['motion'][joint]['angles'] = []
-            motion['motion'][joint]['times'] = [0.0]
+            motion['motion'][joint]['times'] = [sleep_time]
 
         # Relay motion at a set framerate
-        sleep_time = 1.0 / framerate
         while self.is_relaying_motion:
             angles = self.motion.getAngles(target_joints, False)
             for idx, joint in enumerate(target_joints):

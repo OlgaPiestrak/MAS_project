@@ -274,19 +274,22 @@ class RobotConsumer(CBSRdevice):
                 joint_chains = loads(joint_chains)  # parse string json list to python list.
                 if not (isinstance(joint_chains, list)):
                     raise ValueError('The supplied joints and chains should be formatted as a list e.g. ["Head", ...].')
-                self.is_motion_recording = True
-                self.record_motion_thread = Thread(target=self.record_motion, args=(joint_chains, float(framerate),))
-                self.record_motion_thread.start()
-                self.produce('RecordMotionStarted')
+                if not self.is_motion_recording:
+                    self.is_motion_recording = True
+                    self.record_motion_thread = Thread(target=self.record_motion,
+                                                       args=(joint_chains, float(framerate),))
+                    self.record_motion_thread.start()
+                    self.produce('RecordMotionStarted')
             elif message == 'stop':
-                self.is_motion_recording = False
-                self.record_motion_thread.join()
-                self.publish('robot_motion_recording',
-                             self.compress_motion(self.recorded_motion,
-                                                  PRECISION_FACTOR_MOTION_ANGLES,
-                                                  PRECISION_FACTOR_MOTION_TIMES))
-                self.produce('RecordMotionDone')
-                self.recorded_motion = {}
+                if self.is_motion_recording:
+                    self.is_motion_recording = False
+                    self.record_motion_thread.join()
+                    self.publish('robot_motion_recording',
+                                 self.compress_motion(self.recorded_motion,
+                                                      PRECISION_FACTOR_MOTION_ANGLES,
+                                                      PRECISION_FACTOR_MOTION_TIMES))
+                    self.produce('RecordMotionDone')
+                    self.recorded_motion = {}
             else:
                 raise ValueError('Command for action_record_motion not recognized: ' + message)
         except ValueError as valerr:
