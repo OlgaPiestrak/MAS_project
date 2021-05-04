@@ -18,7 +18,6 @@ PRECISION_FACTOR_MOTION_TIMES = 100  # Time values require a decimal precision o
 class RobotPuppet(CBSRdevice):
     def __init__(self, session, server, username, password, topics, profiling):
         self.awareness = session.service('ALBasicAwareness')
-        self.awareness.setEnabled(False)  # disable awareness ('puppet')
         self.memory = session.service('ALMemory')
         self.motion = session.service('ALMotion')
 
@@ -82,6 +81,7 @@ class RobotPuppet(CBSRdevice):
 
                 if not self.is_relaying_motion:
                     self.is_relaying_motion = True
+                    self.awareness.setEnabled(False)  # disable awareness ('puppet')
                     self.motion.stiffnessInterpolation(joint_chains, 0.0, 1.0)  # set minimum stiffness ('puppet')
                     self.relay_motion_thread = Thread(target=self.relay_motion, args=(joint_chains, float(framerate),))
                     self.relay_motion_thread.start()
@@ -110,15 +110,18 @@ class RobotPuppet(CBSRdevice):
 
         # Relay motion at a set framerate
         sleep_time = 1.0 / framerate
+        prev_angles = []
         while self.is_relaying_motion:
             motion = {'robot': self.robot_type, 'motion': {}}
             angles = self.motion.getAngles(target_joints, False)
-            for idx, joint in enumerate(target_joints):
-                motion['motion'][joint] = {}
-                motion['motion'][joint]['angles'] = [angles[idx]]
-                motion['motion'][joint]['times'] = [sleep_time]
-            self.publish('robot_motion_recording',
-                         self.compress_motion(motion, PRECISION_FACTOR_MOTION_ANGLES, PRECISION_FACTOR_MOTION_TIMES))
+            if angles != prev_angles:
+                prev_angles = angles
+                for idx, joint in enumerate(target_joints):
+                    motion['motion'][joint] = {}
+                    motion['motion'][joint]['angles'] = [angles[idx]]
+                    motion['motion'][joint]['times'] = [sleep_time]
+                compressed = self.compress_motion(motion, PRECISION_FACTOR_MOTION_ANGLES, PRECISION_FACTOR_MOTION_TIMES)
+                self.publish('robot_motion_recording', compressed)
             sleep(sleep_time)  # TODO: account for time taken by compress_motion?
 
     def generate_joint_list(self, joint_chains):
