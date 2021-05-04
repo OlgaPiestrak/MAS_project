@@ -221,7 +221,6 @@ class RobotConsumer(CBSRdevice):
                 motion = message
 
             joints = []
-            start_angle = []
             angles = []
             times = []
             for joint in motion.keys():
@@ -233,23 +232,19 @@ class RobotConsumer(CBSRdevice):
                 if joint not in self.all_joints:
                     print('Joint ' + str(joint) + ' not recognized.')
                     continue
-                angl = motion[joint]['angles']
+                angls = motion[joint]['angles']
                 tms = motion[joint]['times']
-                if not angl or not tms:
+                if not angls or not tms:
                     print('Joint ' + str(joint) + ' has no values')
-                elif len(angl) != len(tms):
-                    print('The angle list size (' + str(len(angl)) + ') is not equal to ' +
+                elif len(angls) != len(tms):
+                    print('The angle list size (' + str(len(angls)) + ') is not equal to ' +
                           'the times list size (' + str(len(tms)) + ') for ' + str(joint) + '.')
                 else:
                     joints.append(joint)
-                    start_angle.append(angl[0])
-                    angles.append(angl[1:])
-                    times.append(tms[1:])
+                    angles.append(angls)
+                    times.append(tms)
 
             self.produce('PlayMotionStarted')
-            # Go safely to start position
-            self.motion.angleInterpolationWithSpeed(joints, start_angle, 0.5)
-            # Play rest of the motion
             self.motion.angleInterpolation(joints, angles, times, True)
             self.produce('PlayMotionDone')
         except ValueError as valerr:
@@ -325,9 +320,9 @@ class RobotConsumer(CBSRdevice):
             led_threads = []
             for i in range(0, len(leds)):
                 if colors[i] == 'off':
-                    t = Thread(target=self.leds.off, args=(leds[i], ))
+                    t = Thread(target=self.leds.off, args=(leds[i],))
                 else:
-                    t = Thread(target=self.leds.fadeRGB, args=(leds[i], colors[i], fade_time, ))
+                    t = Thread(target=self.leds.fadeRGB, args=(leds[i], colors[i], fade_time,))
                 t.start()
                 led_threads.append(t)
 
@@ -356,10 +351,10 @@ class RobotConsumer(CBSRdevice):
                 colors = self.to_hex_list(loads(colors))  # parse string json list to hex colors
                 speed = float(speed) / 1000.0  # transform from milliseconds to seconds
                 if anim_type == 'rotate':
-                    if not(location == 'eyes' or location == 'all'):
+                    if not (location == 'eyes' or location == 'all'):
                         raise ValueError('Rotate animation is only possible when eyes are included.')
                     self.led_animation_thread = Thread(target=self.led_animation_rotate,
-                                                       args=(location, colors, speed, ))
+                                                       args=(location, colors, speed,))
                 elif anim_type == 'blink':
                     self.led_animation_thread = Thread(target=self.led_animation_blink,
                                                        args=(location, colors, speed,))
@@ -367,7 +362,7 @@ class RobotConsumer(CBSRdevice):
                     if location == 'chest':
                         raise ValueError('The chest can only show a blinking animation.')
                     self.led_animation_thread = Thread(target=self.led_animation_alternate,
-                                                       args=(location, colors, speed, ))
+                                                       args=(location, colors, speed,))
                 else:
                     raise ValueError('Led animation "' + anim_type + '" not recognized.')
                 self.is_running_led_animation = True
@@ -531,8 +526,8 @@ class RobotConsumer(CBSRdevice):
             motion['motion'][joint]['times'] = []
 
         # record motion with a set framerate
-        time = 0.0
         sleep_time = 1.0 / framerate
+        time = 0.5  # gives the robot time to move to the start position
         while self.is_motion_recording:
             angles = self.motion.getAngles(target_joints, False)
             for idx, joint in enumerate(target_joints):
