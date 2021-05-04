@@ -120,6 +120,8 @@ class RobotPuppet(CBSRdevice):
                 motion['motion'][joint] = {}
                 motion['motion'][joint]['angles'] = [angles[idx]]
                 motion['motion'][joint]['times'] = [sleep_time]
+            if self.robot_type == 'pepper':
+                motion['motion']['movement'] = self.motion.getRobotVelocity()
             compressed = self.compress_motion(motion, PRECISION_FACTOR_MOTION_ANGLES, PRECISION_FACTOR_MOTION_TIMES)
             self.publish('robot_motion_recording', compressed)
             sleep(sleep_time)  # TODO: account for time taken by compress_motion?

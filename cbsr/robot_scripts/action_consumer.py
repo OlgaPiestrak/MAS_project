@@ -227,6 +227,9 @@ class RobotConsumer(CBSRdevice):
                 if joint == 'LED':  # special case (from emotion transformation)
                     self.leds.fadeRGB('FaceLeds', int(motion[joint]['colors'][0], 0), motion[joint]['times'][-1])
                     continue
+                elif joint == 'movement':  # another special case (Pepper movement relay)
+                    self.motion.move(*motion[joint])
+                    continue
 
                 # To protect the robots hardware from incorrect commands, do extensive checks.
                 if joint not in self.all_joints:
