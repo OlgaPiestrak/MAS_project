@@ -20,6 +20,7 @@ class RobotPuppet(CBSRdevice):
         self.awareness = session.service('ALBasicAwareness')
         self.memory = session.service('ALMemory')
         self.motion = session.service('ALMotion')
+        self.movement = session.service('ALBackgroundMovement')
 
         # Get robot body type (nao or pepper)
         self.robot_type = self.memory.getData('RobotConfig/Body/Type').lower()
@@ -47,8 +48,6 @@ class RobotPuppet(CBSRdevice):
     def process_message(self, message):
         channel = self.get_channel_name(message['channel'])
         data = message['data']
-        # print(channel)
-
         if channel == 'action_relay_motion':
             self.process_action_relay_motion(data)
         else:
@@ -81,8 +80,11 @@ class RobotPuppet(CBSRdevice):
 
                 if not self.is_relaying_motion:
                     self.is_relaying_motion = True
-                    self.awareness.setEnabled(False)  # disable awareness ('puppet')
-                    self.motion.stiffnessInterpolation(joint_chains, 0.0, 1.0)  # set minimum stiffness ('puppet')
+                    # Puppet-mode
+                    self.awareness.setEnabled(False)
+                    self.movement.setEnabled(False)
+                    self.motion.stiffnessInterpolation(joint_chains, 0.0, 1.0)
+                    # Start the relaying
                     self.relay_motion_thread = Thread(target=self.relay_motion, args=(joint_chains, float(framerate),))
                     self.relay_motion_thread.start()
                     self.produce('RelayMotionStarted')
@@ -110,19 +112,18 @@ class RobotPuppet(CBSRdevice):
 
         # Relay motion at a set framerate
         sleep_time = 1.0 / framerate
-        prev_angles = []
+        print('Starting relay at ' + str(framerate) + ' FPS...')
         while self.is_relaying_motion:
             motion = {'robot': self.robot_type, 'motion': {}}
             angles = self.motion.getAngles(target_joints, False)
-            if angles != prev_angles:
-                prev_angles = angles
-                for idx, joint in enumerate(target_joints):
-                    motion['motion'][joint] = {}
-                    motion['motion'][joint]['angles'] = [angles[idx]]
-                    motion['motion'][joint]['times'] = [sleep_time]
-                compressed = self.compress_motion(motion, PRECISION_FACTOR_MOTION_ANGLES, PRECISION_FACTOR_MOTION_TIMES)
-                self.publish('robot_motion_recording', compressed)
+            for idx, joint in enumerate(target_joints):
+                motion['motion'][joint] = {}
+                motion['motion'][joint]['angles'] = [angles[idx]]
+                motion['motion'][joint]['times'] = [sleep_time]
+            compressed = self.compress_motion(motion, PRECISION_FACTOR_MOTION_ANGLES, PRECISION_FACTOR_MOTION_TIMES)
+            self.publish('robot_motion_recording', compressed)
             sleep(sleep_time)  # TODO: account for time taken by compress_motion?
+        print('Relay ended!')
 
     def generate_joint_list(self, joint_chains):
         """
