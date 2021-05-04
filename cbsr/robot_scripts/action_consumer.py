@@ -228,7 +228,7 @@ class RobotConsumer(CBSRdevice):
                     self.leds.fadeRGB('FaceLeds', int(motion[joint]['colors'][0], 0), motion[joint]['times'][-1])
                     continue
                 elif joint == 'movement':  # another special case (Pepper movement relay)
-                    movement = motion[joint]['angles'][0]
+                    movement = motion[joint]['angles']
                     self.motion.move(float(movement[0]), float(movement[1]), float(movement[2]))
                     continue
                 elif joint not in self.all_joints:
