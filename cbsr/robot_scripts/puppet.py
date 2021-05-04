@@ -199,6 +199,10 @@ class RobotPuppet(CBSRdevice):
         motion = dumps(motion, separators=(',', ':'))
         return motion
 
+    def shutdown(self):
+        self.is_relaying_motion = False
+        super(RobotPuppet, self).shutdown()
+
 
 if __name__ == '__main__':
     parser = ArgumentParser()

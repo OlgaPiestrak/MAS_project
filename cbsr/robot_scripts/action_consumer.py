@@ -710,6 +710,11 @@ class RobotConsumer(CBSRdevice):
         elif value:
             self.leds.fadeRGB(type, value, 0.1)
 
+    def shutdown(self):
+        self.is_motion_recording = False
+        self.is_running_led_animation = False
+        super(RobotConsumer, self).shutdown()
+
 
 if __name__ == '__main__':
     parser = ArgumentParser()
