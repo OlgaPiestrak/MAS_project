@@ -14,7 +14,7 @@ from transformation import Transformation
 # required decimal precision for a fluent motion, the angle and motion values are multiplied with a precision factor
 # To reverse this, for decompression, the angle and motion values (ints) are divided by the precision
 # factor and converted to a decimal value again.
-PRECISION_FACTOR_MOTION_ANGLES = 1000  # Angle values require a decimal precision of at leas 3 (giving a factor of 1000)
+PRECISION_FACTOR_MOTION_ANGLES = 1000  # Angle values require a decimal precision of at least 3 (giving a factor of 1000)
 PRECISION_FACTOR_MOTION_TIMES = 100  # Time values require a decimal precision of at least 2 (giving a factor of 100)
 
 
@@ -150,7 +150,8 @@ class RobotConsumer(CBSRdevice):
             print('Unknown command')
 
     def process_action_posture(self, posture):
-        """" Instruct robot to attempt to take on the target posture with a given speed (value between 0.0 and 1.0).
+        """" 
+        Instruct robot to attempt to take on the target posture with a given speed (value between 0.0 and 1.0).
         The target posture should be a predefined posture.
 
         Predefined postures for pepper are: Stand or StandInit, StandZero, and  Crouch
@@ -175,7 +176,7 @@ class RobotConsumer(CBSRdevice):
 
     def process_action_stiffness(self, message):
         """
-        Sets the stiffness value of a list of joint chain.
+        Set the stiffness value of a list of joint chain.
         For Nao joint chains are: Head, RArm, LArm, RLeg, LLeg
         For Pepper joint chains are Head, RArm, LArm, Leg, Wheels
 
@@ -203,8 +204,8 @@ class RobotConsumer(CBSRdevice):
         Play a motion of a given robot by moving a given set of joints to a given angle for a given time frame.
 
         :param compressed: flag to indicate whether the motion data is compressed or not
-        :param message: zlib compressed json with the following format:
-        {'robot': '<nao/pepper>', 'compress_factor_angles': int, 'compress_factor_times': int,
+        :param message: compressed json with the following format:
+        {'robot': '<nao/pepper>', 'precision_factor_angles': int, 'precision_factor_times': int,
         'motion': {'Joint1': {'angles': list, 'times': list}, 'JointN: {...}}}
         :return:
         """
@@ -387,8 +388,7 @@ class RobotConsumer(CBSRdevice):
     def led_animation_rotate(self, location, colors, speed):
         """
         Play rotate animation with given color and speed. Only the eyes can play the rotate animation.
-        In case location is 'all', the eyes will
-        rotate and the chest and feet will blink with the se
+        In case location is 'all', the eyes will rotate and the chest and feet will blink.
         :param location: 'eyes' (default) or 'all'
         :param colors: list of rgb hex color (when list size > 1, the first color will be used)
         :param speed: rotations per second
@@ -447,7 +447,7 @@ class RobotConsumer(CBSRdevice):
 
     def led_animation_alternate(self, location, colors, speed):
         """
-        Alternates two colors between left and right of pairs of leds (eyes and/or feet)
+        Alternate two colors between left and right of pairs of leds (eyes and/or feet)
 
         :param location: 'eyes', 'feet', 'all' (default)
         :param colors: list of rgb hex colors
@@ -491,7 +491,7 @@ class RobotConsumer(CBSRdevice):
     @staticmethod
     def to_hex_list(colors):
         """
-        Parsers string input to proper rgb hex color code.
+        Parse string input to proper rgb hex color code.
         If color code is not recognized, defaults to white (0xffffff).
 
         :param colors: list of string with colors, can process various formats (0x<rgb hex code>, #<rgb hex code>,
@@ -513,11 +513,11 @@ class RobotConsumer(CBSRdevice):
 
     def record_motion(self, joint_chains, framerate):
         """
-        Helper method for process_action_record_motion() that records the angles with for a number (framerate) of times
+        Helper method for process_action_record_motion that records the angles with for a number (framerate) of times
         per second.
 
         :param joint_chains: list of joints and/or joint chains to record
-        :param framerate: numer of recording per second
+        :param framerate: number of recordings per second
         :return:
         """
         # get list of joints from chains
@@ -560,7 +560,7 @@ class RobotConsumer(CBSRdevice):
             elif joint_chain not in self.body_model.keys() and joint_chain in self.all_joints:
                 joints += joint_chain
             else:
-                print('Joint ' + joint_chain + ' not recognized. Will not be skipped for recording.')
+                print('Joint ' + joint_chain + ' not recognized. Will be skipped for recording.')
         return joints
 
     @property

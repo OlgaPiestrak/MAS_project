@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+SERVER=unknown1
+USER=unknown2
+PASS=unknown3
+EXTRA=unknown4
+
+cd "$(dirname "$0")"
+for f in *.pid; do
+  if [ -f "$f" ]; then
+    echo "Found running processes; please execute stop.sh first!"
+    exit 1
+  fi
+done
+
+echo "[PUPPET MODE] Installing..."
+
+PIP="20.3.4"
+if ! ../.local/bin/pip -V | grep -q "$PIP"; then
+    /usr/bin/pip install --user --upgrade pip==$PIP
+fi
+
+../.local/bin/pip install --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 wheel~=0.36
+../.local/bin/pip install --user .
+
+nohup python -u puppet.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > puppet.log 2>&1 & echo $! > puppet.pid
+
+echo "[PUPPET MODE] Installation completed!"
