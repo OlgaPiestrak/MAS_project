@@ -19,6 +19,7 @@ class RobotPuppet(CBSRdevice):
     def __init__(self, session, server, username, password, topics, profiling):
         self.awareness = session.service('ALBasicAwareness')
         self.awareness.setEnabled(False)  # disable awareness ('puppet')
+        self.memory = session.service('ALMemory')
         self.motion = session.service('ALMotion')
 
         # Get robot body type (nao or pepper)
