@@ -98,7 +98,7 @@ class RobotPuppet(CBSRdevice):
 
     def relay_motion(self, joint_chains, framerate):
         """
-        Helper method for process_action_relay_motion() that relays the angles with for a number (framerate) of times
+        Helper method for process_action_relay_motion() that relays the angles for a number (framerate) of times
         per second.
 
         :param joint_chains: list of joints and/or joint chains to relay
@@ -108,19 +108,15 @@ class RobotPuppet(CBSRdevice):
         # get list of joints from chains
         target_joints = self.generate_joint_list(joint_chains)
 
-        # Initialize motion
-        sleep_time = 1.0 / framerate
-        motion = {'robot': self.robot_type, 'motion': {}}
-        for joint in target_joints:
-            motion['motion'][joint] = {}
-            motion['motion'][joint]['angles'] = []
-            motion['motion'][joint]['times'] = [sleep_time]
-
         # Relay motion at a set framerate
+        sleep_time = 1.0 / framerate
         while self.is_relaying_motion:
+            motion = {'robot': self.robot_type, 'motion': {}}
             angles = self.motion.getAngles(target_joints, False)
             for idx, joint in enumerate(target_joints):
+                motion['motion'][joint] = {}
                 motion['motion'][joint]['angles'] = [angles[idx]]
+                motion['motion'][joint]['times'] = [sleep_time]
             self.publish('robot_motion_recording',
                          self.compress_motion(motion, PRECISION_FACTOR_MOTION_ANGLES, PRECISION_FACTOR_MOTION_TIMES))
             sleep(sleep_time)  # TODO: account for time taken by compress_motion?

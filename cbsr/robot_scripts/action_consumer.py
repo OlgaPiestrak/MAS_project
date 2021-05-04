@@ -511,7 +511,7 @@ class RobotConsumer(CBSRdevice):
 
     def record_motion(self, joint_chains, framerate):
         """
-        Helper method for process_action_record_motion that records the angles with for a number (framerate) of times
+        Helper method for process_action_record_motion that records the angles for a number (framerate) of times
         per second.
 
         :param joint_chains: list of joints and/or joint chains to record
