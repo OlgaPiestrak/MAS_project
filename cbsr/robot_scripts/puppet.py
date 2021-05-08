@@ -83,7 +83,9 @@ class RobotPuppet(CBSRdevice):
                     # Puppet-mode
                     self.awareness.setEnabled(False)
                     self.movement.setEnabled(False)
-                    self.motion.stiffnessInterpolation(joint_chains, 0.0, 1.0)
+                    self.motion.setStiffnesses(joint_chains, 0.0)
+                    if self.robot_type == 'pepper':
+                        self.motion.setStiffnesses(joint_chains, 0.0, 1.0)
                     # Start the relaying
                     self.relay_motion_thread = Thread(target=self.relay_motion, args=(joint_chains, float(framerate),))
                     self.relay_motion_thread.start()
@@ -156,7 +158,7 @@ class RobotPuppet(CBSRdevice):
 
         For more information see robot documentation:
         For nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains
-        For pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html
+        For pepper: https://doc.aldebaran.com/2-5/family/pepper_technical/bodyparts_pep.html
 
         :return:
         """
