@@ -34,6 +34,8 @@ class RobotMemoryService(CBSRservice):
                 self.get_full_channel('memory_get_narrative_history'): self.get_narrative_history,
                 self.get_full_channel('memory_set_move_history'): self.set_move_history,
                 self.get_full_channel('memory_get_move_history'): self.get_move_history,
+                self.get_full_channel('memory_set_topics_of_interest'): self.set_topics_of_interest,
+                self.get_full_channel('memory_get_topics_of_interest'): self.get_topics_of_interest,
                 self.get_full_channel('memory_clear_history'): self.clear_history,
                 self.get_full_channel('memory_delete_interactant'): self.delete_interactant,
                 self.get_full_channel('memory_delete_all_interactants'): self.delete_all_interactants}
@@ -160,7 +162,8 @@ class RobotMemoryService(CBSRservice):
             elif history_length == session_id-1:
                 self.redis.rpush(key, position)
             else:
-                self.redis.rpushx([0] * (session_id - history_length - 1) + [position])
+                his = [0] * (session_id - history_length - 1) + [position]
+                self.redis.rpush(key, *his)
             self.produce_event('NarrativeHistorySet')
         except EntryIncorrectFormatError as err:
             print(self.identifier + ' > Could not set narrative history due to: ' + str(err))
@@ -196,25 +199,69 @@ class RobotMemoryService(CBSRservice):
         except EntryIncorrectFormatError as err:
             print(self.identifier + ' > Could not get move history due to: ' + str(err))
 
+    def set_topics_of_interest(self, message):
+        try:
+            interactant_id, topics = self.get_data(message, 2, 'interactant_id;topics')
+            topics = loads(topics)
+            session_id = int(self.redis.hget(self.get_interactant_key(interactant_id), 'session_id').decode('utf-8'))
+            toi_admin_key = self.get_interactant_key(interactant_id, 'toi_admin')
+            toi_length = self.redis.rpush(self.get_interactant_key(interactant_id, 'toi'), *topics)
+            toi_admin_length = self.redis.llen(toi_admin_key)
+            if toi_admin_length >= session_id:
+                self.redis.lset(toi_admin_key, session_id-1, toi_length)
+            elif toi_admin_length == session_id-1:
+                self.redis.rpush(toi_admin_key, toi_length)
+            else:
+                admin = [0] * (session_id - toi_admin_length - 1) + [toi_length]
+                self.redis.rpush(toi_admin_key, *admin)
+            self.produce_event('TopicsOfInterestSet')
+        except EntryIncorrectFormatError as err:
+            print(self.identifier + ' > Could not set topics of interest history due to: ' + str(err))
+
+    def get_topics_of_interest(self, message):
+        try:
+            interactant_id = self.get_data(message, 1, 'interactant_id')
+            toi = self.redis.lrange(self.get_interactant_key(interactant_id, 'toi'), 0, -1)
+            if toi:
+                self.produce_data('TopicsOfInterest', [t.decode('utf-8') for t in toi])
+            else:
+                self.produce_data('TopicsOfInterest', [])
+        except EntryIncorrectFormatError as err:
+            print(self.identifier + ' > Could not get topics of interest history due to: ' + str(err))
+
     def clear_history(self, message):
         try:
             interactant_id, session_id = self.get_data(message, 2, 'interactant_id;session_id')
             dialog_keys = list(self.redis.scan_iter(self.get_interactant_key(interactant_id, 'dialoghistory:*')))
             threads = list(self.redis.scan_iter(self.get_interactant_key(interactant_id, 'narrativehistory:*')))
-
+            session_id = int(session_id)
+            toi_key = self.get_interactant_key(interactant_id, 'toi')
+            toi_admin_key = self.get_interactant_key(interactant_id, 'toi_admin')
+            toi_exists = self.redis.exists(toi_key, toi_admin_key) == 2
             with self.redis.pipeline() as pipe:
+                if toi_exists:
+                    if session_id == 1:
+                        pipe.delete(toi_key, toi_admin_key)
+                    else:
+                        pipe.lindex(toi_admin_key, session_id-2)
+                        pipe.ltrim(toi_admin_key, 0, session_id-2)
+
                 if dialog_keys:
-                    dialog_his = [his for his in dialog_keys if int(his.decode('utf-8').split(':')[-1]) >= int(session_id)]
+                    dialog_his = [his for his in dialog_keys if int(his.decode('utf-8').split(':')[-1]) >= session_id]
                     if dialog_his:
                         pipe.delete(*dialog_his)
 
                 if threads:
-                    if int(session_id) == 1:
+                    if session_id == 1:
                         pipe.delete(*threads)
                     else:
                         for thread in threads:
-                            pipe.ltrim(thread, 0, int(session_id)-2)
-                pipe.execute()
+                            pipe.ltrim(thread, 0, session_id-2)
+                result = pipe.execute()
+
+            if toi_exists and session_id > 1 and result[0]:
+                self.redis.ltrim(toi_key, 0, int(result[0].decode('utf-8'))-1)
+
             self.produce_event('HistoryCleared')
         except EntryIncorrectFormatError as err:
             print(self.identifier + ' > Could not clear history due to: ' + str(err))
