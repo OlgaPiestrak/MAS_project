@@ -84,8 +84,6 @@ class RobotPuppet(CBSRdevice):
                     self.awareness.setEnabled(False)
                     self.movement.setEnabled(False)
                     self.motion.setStiffnesses(joint_chains, 0.0)
-                    if self.robot_type == 'pepper':
-                        self.motion.setStiffnesses(joint_chains, 0.0, 1.0)
                     # Start the relaying
                     self.relay_motion_thread = Thread(target=self.relay_motion, args=(joint_chains, float(framerate),))
                     self.relay_motion_thread.start()
