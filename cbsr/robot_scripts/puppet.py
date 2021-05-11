@@ -78,11 +78,14 @@ class RobotPuppet(CBSRdevice):
                 if not (isinstance(joint_chains, list)):
                     raise ValueError('The supplied joints and chains should be formatted as a list e.g. ["Head", ...].')
 
-                if not self.is_relaying_motion:
+                if self.is_relaying_motion:
+                    print('Already running!')
+                else:
                     self.is_relaying_motion = True
                     # Puppet-mode
                     self.awareness.setEnabled(False)
                     self.movement.setEnabled(False)
+                    self.motion.setSmartStiffnessEnabled(False)
                     self.motion.setStiffnesses(joint_chains, 0.0)
                     # Start the relaying
                     self.relay_motion_thread = Thread(target=self.relay_motion, args=(joint_chains, float(framerate),))
@@ -90,9 +93,12 @@ class RobotPuppet(CBSRdevice):
                     self.produce('RelayMotionStarted')
             elif message == 'stop':
                 if self.is_relaying_motion:
+                    print('Received stop...')
                     self.is_relaying_motion = False
                     self.relay_motion_thread.join()
                     self.produce('RelayMotionDone')
+                else:
+                    print('Already stopped!')
             else:
                 raise ValueError('Command for action_relay_motion not recognized: ' + message)
         except ValueError as valerr:
