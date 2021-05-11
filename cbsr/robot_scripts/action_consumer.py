@@ -248,6 +248,7 @@ class RobotConsumer(CBSRdevice):
                     times.append(tms)
 
             self.produce('PlayMotionStarted')
+            self.motion.setStiffnesses(joints, 1.0)
             self.motion.angleInterpolation(joints, angles, times, True)
             self.produce('PlayMotionDone')
         except ValueError as valerr:
