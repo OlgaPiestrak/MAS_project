@@ -38,6 +38,7 @@ class RobotConsumer(CBSRdevice):
         self.recorded_motion = {}
         self.record_motion_thread = None
         self.is_motion_recording = False
+        self.is_playing_motion = False
 
         # light animations
         self.is_running_led_animation = False
@@ -133,7 +134,10 @@ class RobotConsumer(CBSRdevice):
         elif channel == 'action_stiffness':
             self.process_action_stiffness(data)
         elif channel == 'action_play_motion':
-            self.process_action_play_motion(data)
+            if self.is_playing_motion:
+                print('Already playing a motion animation...')
+            else:
+                self.process_action_play_motion(data)
         elif channel == 'action_record_motion':
             self.process_action_record_motion(data)
         elif channel == 'action_motion_file':
@@ -248,8 +252,9 @@ class RobotConsumer(CBSRdevice):
                     times.append(tms)
 
             self.produce('PlayMotionStarted')
-            self.motion.setStiffnesses(joints, 1.0)
+            self.is_playing_motion = True
             self.motion.angleInterpolation(joints, angles, times, True)
+            self.is_playing_motion = False
             self.produce('PlayMotionDone')
         except ValueError as valerr:
             print('action_play_motion received incorrect input: ' + valerr.message)
@@ -278,7 +283,9 @@ class RobotConsumer(CBSRdevice):
                 joint_chains = loads(joint_chains)  # parse string json list to python list.
                 if not (isinstance(joint_chains, list)):
                     raise ValueError('The supplied joints and chains should be formatted as a list e.g. ["Head", ...].')
-                if not self.is_motion_recording:
+                if self.is_motion_recording:
+                    print('Already recording motion...')
+                else:
                     self.is_motion_recording = True
                     self.record_motion_thread = Thread(target=self.record_motion,
                                                        args=(joint_chains, float(framerate),))
@@ -294,6 +301,8 @@ class RobotConsumer(CBSRdevice):
                                                       PRECISION_FACTOR_MOTION_TIMES))
                     self.produce('RecordMotionDone')
                     self.recorded_motion = {}
+                else:
+                    print('Already not recording motion...')
             else:
                 raise ValueError('Command for action_record_motion not recognized: ' + message)
         except ValueError as valerr:
@@ -372,16 +381,21 @@ class RobotConsumer(CBSRdevice):
                                                        args=(location, colors, speed,))
                 else:
                     raise ValueError('Led animation "' + anim_type + '" not recognized.')
-                self.is_running_led_animation = True
-                self.led_animation_thread.start()
-                self.produce('LedAnimationStarted')
+                if self.is_running_led_animation:
+                    print('Already running a LED animation...')
+                else:
+                    self.is_running_led_animation = True
+                    self.led_animation_thread.start()
+                    self.produce('LedAnimationStarted')
             elif message == 'stop':
                 if self.is_running_led_animation:
                     self.is_running_led_animation = False
                     self.led_animation_thread.join()
-                for led in ['FaceLeds', 'ChestLeds', 'FeetLeds']:
-                    self.leds.fadeRGB(led, Colors.to_rgb_hex('white'), 0)
-                self.produce('LedAnimationDone')
+                    for led in ['FaceLeds', 'ChestLeds', 'FeetLeds']:
+                        self.leds.fadeRGB(led, Colors.to_rgb_hex('white'), 0)
+                    self.produce('LedAnimationDone')
+                else:
+                    print('Already not running a LED animation...')
             else:
                 raise ValueError('Command for action_light_animation not recognized: ' + message)
         except ValueError as e:

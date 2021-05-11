@@ -17,10 +17,9 @@ PRECISION_FACTOR_MOTION_TIMES = 100  # Time values require a decimal precision o
 
 class RobotPuppet(CBSRdevice):
     def __init__(self, session, server, username, password, topics, profiling):
-        self.awareness = session.service('ALBasicAwareness')
+        self.autonomy = session.service('ALAutonomousLife')
         self.memory = session.service('ALMemory')
         self.motion = session.service('ALMotion')
-        self.movement = session.service('ALBackgroundMovement')
 
         # Get robot body type (nao or pepper)
         self.robot_type = self.memory.getData('RobotConfig/Body/Type').lower()
@@ -81,13 +80,11 @@ class RobotPuppet(CBSRdevice):
                 if self.is_relaying_motion:
                     print('Already running!')
                 else:
-                    self.is_relaying_motion = True
                     # Puppet-mode
-                    self.awareness.setEnabled(False)
-                    self.movement.setEnabled(False)
-                    #self.motion.setSmartStiffnessEnabled(False)
+                    self.autonomy.setState('disabled')
                     self.motion.setStiffnesses(joint_chains, 0.0)
                     # Start the relaying
+                    self.is_relaying_motion = True
                     self.relay_motion_thread = Thread(target=self.relay_motion, args=(joint_chains, float(framerate),))
                     self.relay_motion_thread.start()
                     self.produce('RelayMotionStarted')
