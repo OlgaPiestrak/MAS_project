@@ -85,7 +85,7 @@ class RobotPuppet(CBSRdevice):
                     # Puppet-mode
                     self.awareness.setEnabled(False)
                     self.movement.setEnabled(False)
-                    self.motion.setSmartStiffnessEnabled(False)
+                    #self.motion.setSmartStiffnessEnabled(False)
                     self.motion.setStiffnesses(joint_chains, 0.0)
                     # Start the relaying
                     self.relay_motion_thread = Thread(target=self.relay_motion, args=(joint_chains, float(framerate),))
