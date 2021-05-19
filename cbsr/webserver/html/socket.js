@@ -67,12 +67,14 @@ function activateButtons() {
 }
 function chatBox() {
 	var chatBox = $('.chatbox');
-	chatBox.html('<form><input type="text" autofocus class="w-25"><input type="submit"></form>');
+	chatBox.html('<form><input id="chatbox-input" type="text" autofocus class="w-25"><input type="submit"></form>');
+	var chatBoxInput = $("#chatbox-input");
+	chatBoxInput.focus();
+
 	chatBox.submit(function(e) {
-		var input = $('.chatbox input').first();
-		var text = input.val();
+		var text = chatBoxInput.val();
 		socket.send('action_chat|'+text);
-		input.val('');
+		chatBoxInput.val('');
 		e.preventDefault();
 	});
 }
