@@ -229,7 +229,7 @@ class RobotConsumer(CBSRdevice):
                     continue
                 elif joint == 'movement':  # another special case (Pepper movement relay)
                     movement = motion[joint]['angles']
-                    self.motion.move(float(movement[0]), float(movement[1]), float(movement[2]))
+                    self.motion.move(movement[0], movement[1], movement[2])
                     continue
                 elif joint not in self.all_joints:
                     print('Joint ' + joint + ' not recognized.')
@@ -244,17 +244,18 @@ class RobotConsumer(CBSRdevice):
                           'the times list size (' + str(len(tms)) + ') for ' + joint + '.')
                 else:
                     joints.append(joint)
-                    angles.append(angls)
                     if tms:
+                        angles.append(angls)
                         times.append(tms)
+                    else:
+                        angles.append(angls[0])
 
             self.produce('PlayMotionStarted')
             self.motion.setStiffnesses(joints, 1.0)
             if times:
                 self.motion.angleInterpolation(joints, angles, times, True)
             else:
-                print('Moving ' + str(joints) + ' to ' + str(angles))
-                self.motion.setAngles(joints, angles, 0.1)
+                self.motion.setAngles(joints, angles, 1.0)
             self.produce('PlayMotionDone')
         except ValueError as valerr:
             print('action_play_motion received incorrect input: ' + valerr.message)
