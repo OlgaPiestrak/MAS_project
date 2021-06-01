@@ -255,7 +255,7 @@ class RobotConsumer(CBSRdevice):
             if times:
                 self.motion.angleInterpolation(joints, angles, times, True)
             else:
-                self.motion.setAngles(joints, angles, 0.5)
+                self.motion.setAngles(joints, angles, 0.75)
             self.produce('PlayMotionDone')
         except ValueError as valerr:
             print('action_play_motion received incorrect input: ' + valerr.message)
