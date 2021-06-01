@@ -232,24 +232,28 @@ class RobotConsumer(CBSRdevice):
                     self.motion.move(float(movement[0]), float(movement[1]), float(movement[2]))
                     continue
                 elif joint not in self.all_joints:
-                    print('Joint ' + str(joint) + ' not recognized.')
+                    print('Joint ' + joint + ' not recognized.')
                     continue
 
                 angls = motion[joint]['angles']
                 tms = motion[joint]['times']
-                if not angls or not tms:
-                    print('Joint ' + str(joint) + ' has no values')
-                elif len(angls) != len(tms):
-                    print('The angle list size (' + str(len(angls)) + ') is not equal to ' +
-                          'the times list size (' + str(len(tms)) + ') for ' + str(joint) + '.')
+                if not angls:
+                    print('Joint ' + joint + ' has no angle values')
+                elif tms and len(angls) != len(tms):
+                    print('The angles list size (' + str(len(angls)) + ') is not equal to ' +
+                          'the times list size (' + str(len(tms)) + ') for ' + joint + '.')
                 else:
                     joints.append(joint)
                     angles.append(angls)
-                    times.append(tms)
+                    if tms:
+                        times.append(tms)
 
             self.produce('PlayMotionStarted')
             self.motion.setStiffnesses(joints, 1.0)
-            self.motion.angleInterpolation(joints, angles, times, True)
+            if times:
+                self.motion.angleInterpolation(joints, angles, times, True)
+            else:
+                self.motion.setAngles(joints, angles, 1.0)
             self.produce('PlayMotionDone')
         except ValueError as valerr:
             print('action_play_motion received incorrect input: ' + valerr.message)

@@ -11,8 +11,8 @@ from simplejson import dumps, loads
 # required decimal precision for a fluent motion, the angle and motion values are multiplied with a precision factor
 # To reverse this, for decompression, the angle and motion values (ints) are divided by the precision
 # factor and converted to a decimal value again.
-PRECISION_FACTOR_MOTION_ANGLES = 1000  # Angle values require a decimal precision of at leas 3 (giving a factor of 1000)
-PRECISION_FACTOR_MOTION_TIMES = 100  # Time values require a decimal precision of at least 2 (giving a factor of 100)
+PRECISION_FACTOR_MOTION_ANGLES = 1000  # Angle values require a decimal precision of at least 3 (a factor of 1000)
+PRECISION_FACTOR_MOTION_TIMES = 0  # We don't pass times
 
 
 class RobotPuppet(CBSRdevice):
@@ -122,11 +122,11 @@ class RobotPuppet(CBSRdevice):
             for idx, joint in enumerate(target_joints):
                 motion['motion'][joint] = {}
                 motion['motion'][joint]['angles'] = [angles[idx]]
-                motion['motion'][joint]['times'] = [sleep_time]
+                motion['motion'][joint]['times'] = []
             if self.robot_type == 'pepper':
                 motion['motion']['movement'] = {}
                 motion['motion']['movement']['angles'] = self.motion.getRobotVelocity()
-                motion['motion']['movement']['times'] = [0, 0, 0]
+                motion['motion']['movement']['times'] = []
             compressed = self.compress_motion(motion, PRECISION_FACTOR_MOTION_ANGLES, PRECISION_FACTOR_MOTION_TIMES)
             self.publish('robot_motion_recording', compressed)
             sleep(sleep_time)  # TODO: account for time taken by compress_motion?
