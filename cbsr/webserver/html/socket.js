@@ -61,8 +61,9 @@ function englishFlag() {
 }
 function activateButtons() {
 	$(':button').click(function() {
-		var buttonValue = $(this).html();
-		socket.send('browser_button|'+buttonValue);
+		var txt = document.createElement('textarea');
+		txt.innerHTML = $(this).html();
+		socket.send('browser_button|'+txt.value);
 	});
 }
 function chatBox() {
