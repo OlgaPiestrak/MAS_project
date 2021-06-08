@@ -13,7 +13,7 @@ class Tablet(CBSRdevice):
         tablet_service.resetTablet()
         tablet_service.enableWifi()
 
-        url = 'https://' + server + ':8000/index.html'
+        url = 'http://' + server + ':8000/index.html'
         tablet_service.showWebview(url)
 
 
