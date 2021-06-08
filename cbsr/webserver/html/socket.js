@@ -2,7 +2,7 @@ var socket = null;
 $(window).on('load', function() {
 	var body = $(document.body);
 	body.html('+');
-	socket = new WebSocket('wss://' + window.location.hostname + ':8001');
+	socket = new WebSocket('ws://' + window.location.hostname + ':8001');
 	socket.onopen = function() {
 		body.html('*');
 	};
