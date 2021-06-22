@@ -61,9 +61,14 @@ function englishFlag() {
 }
 function activateButtons() {
 	$(':button').click(function() {
-		var txt = document.createElement('textarea');
-		txt.innerHTML = $(this).html();
-		socket.send('browser_button|'+txt.value);
+		var dataValue = $(this).children().data('value');
+		if( dataValue ) {
+			socket.send('browser_button|'+dataValue);		
+		} else {
+			var txt = document.createElement('textarea');
+			txt.innerHTML = $(this).html();
+			socket.send('browser_button|'+txt.value);
+		}
 	});
 }
 function chatBox() {
@@ -94,7 +99,7 @@ function activateSorting() {
 			label.html(currentSort.length)
 		}
 	});
-	sortItems.parent().after('<form class="mt-3"><input type="submit" value="Klaar!"></form>');
+	sortItems.parent().parent().after('<form class="mt-3"><input type="submit" value="Klaar!"></form>');
 	$('form').submit(function(e) {
 		socket.send('browser_button|'+JSON.stringify(currentSort));
 		currentSort = [];
