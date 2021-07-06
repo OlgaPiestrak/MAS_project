@@ -30,6 +30,13 @@ class RobotPuppet(CBSRdevice):
         # motion relaying
         self.relay_motion_thread = None
         self.is_relaying_motion = False
+        self.is_paused = False
+
+        # Add touch events
+        subscriber = self.memory.subscriber('MiddleTactilTouched')
+        self.tactil_event = {'subscriber': subscriber,
+                             'id': subscriber.signal.connect(self.on_tactil_touch),
+                             'callback': self.on_tactil_touch}
 
         self.topics = topics
         super(RobotPuppet, self).__init__(server, username, password, profiling)
@@ -39,6 +46,14 @@ class RobotPuppet(CBSRdevice):
 
     def get_channel_action_mapping(self):
         return dict.fromkeys((self.get_full_channel(t) for t in self.topics), self.execute)
+
+    def on_tactil_touch(self, value):
+        self.tactil_event['subscriber'].signal.disconnect(self.tactil_event['id'])
+        if self.is_paused:
+            self.is_paused = True
+        else:
+            self.is_paused = False
+        self.tactil_event['id'] = self.tactil_event['subscriber'].signal.connect(self.tactil_event['callback'])
 
     def execute(self, message):
         t = Thread(target=self.process_message, args=(message,))
@@ -117,18 +132,19 @@ class RobotPuppet(CBSRdevice):
         sleep_time = 1.0 / framerate
         print('Starting relay at ' + str(framerate) + ' FPS...')
         while self.is_relaying_motion:
-            motion = {'robot': self.robot_type, 'motion': {}}
-            angles = self.motion.getAngles(target_joints, False)
-            for idx, joint in enumerate(target_joints):
-                motion['motion'][joint] = {}
-                motion['motion'][joint]['angles'] = [angles[idx]]
-                motion['motion'][joint]['times'] = []
-            if self.robot_type == 'pepper':
-                motion['motion']['movement'] = {}
-                motion['motion']['movement']['angles'] = self.motion.getRobotVelocity()
-                motion['motion']['movement']['times'] = []
-            compressed = self.compress_motion(motion, PRECISION_FACTOR_MOTION_ANGLES, PRECISION_FACTOR_MOTION_TIMES)
-            self.publish('robot_motion_recording', compressed)
+            if not self.is_paused:
+                motion = {'robot': self.robot_type, 'motion': {}}
+                angles = self.motion.getAngles(target_joints, False)
+                for idx, joint in enumerate(target_joints):
+                    motion['motion'][joint] = {}
+                    motion['motion'][joint]['angles'] = [angles[idx]]
+                    motion['motion'][joint]['times'] = []
+                if self.robot_type == 'pepper':
+                    motion['motion']['movement'] = {}
+                    motion['motion']['movement']['angles'] = self.motion.getRobotVelocity()
+                    motion['motion']['movement']['times'] = []
+                compressed = self.compress_motion(motion, PRECISION_FACTOR_MOTION_ANGLES, PRECISION_FACTOR_MOTION_TIMES)
+                self.publish('robot_motion_recording', compressed)
             sleep(sleep_time)  # TODO: account for time taken by compress_motion?
         print('Relay ended!')
 
