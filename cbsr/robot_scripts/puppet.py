@@ -27,12 +27,12 @@ class RobotPuppet(CBSRdevice):
             self.robot_type = 'pepper'
         print('Robot is of type: ' + self.robot_type)
 
-        # motion relaying
+        # Motion relaying
         self.relay_motion_thread = None
         self.is_relaying_motion = False
         self.is_paused = False
 
-        # Add touch events
+        # Touch event (for pausing/unpausing)
         subscriber = self.memory.subscriber('MiddleTactilTouched')
         self.tactil_event = {'subscriber': subscriber,
                              'id': subscriber.signal.connect(self.on_tactil_touch),
@@ -50,9 +50,11 @@ class RobotPuppet(CBSRdevice):
     def on_tactil_touch(self, value):
         self.tactil_event['subscriber'].signal.disconnect(self.tactil_event['id'])
         if self.is_paused:
-            self.is_paused = True
-        else:
+            print('Resuming!')
             self.is_paused = False
+        else:
+            print('Pausing...')
+            self.is_paused = True
         self.tactil_event['id'] = self.tactil_event['subscriber'].signal.connect(self.tactil_event['callback'])
 
     def execute(self, message):
