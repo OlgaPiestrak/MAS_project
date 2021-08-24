@@ -1,12 +1,10 @@
 from io import BytesIO
 from threading import Event, Thread
 
-import cv2
 from PIL import Image
 from cbsr.service import CBSRservice
 from face_recognition import face_locations
-from imutils import resize
-from numpy import asarray, uint8
+from numpy import array, frombuffer, ones, uint8, reshape
 
 
 class PeopleDetectionService(CBSRservice):
@@ -53,30 +51,36 @@ class PeopleDetectionService(CBSRservice):
                 self.is_image_available = False
                 self.image_available_flag.clear()
 
-                # Create a PIL Image from the byte string redis result
+                # Get the raw bytes from Redis (should be in YUV422)
                 image_stream = self.redis.get(self.get_full_channel('image_stream'))
                 if self.image_width == 0:
                     image_size_string = self.redis.get(self.get_full_channel('image_size'))
-                    print(self.identifier + '_image_size => ' + image_size_string)
                     self.image_width = int(image_size_string[0:4])
                     self.image_height = int(image_size_string[4:])
-                image = Image.frombytes('RGB', (self.image_width, self.image_height), image_stream)
 
-                # If image needs to be saved, publish it on Redis
-                if self.save_image:
+                # YUV type juggling (end up with YUV444 which PIL can read directly)
+                arr = frombuffer(image_stream, dtype=uint8)
+                y = arr[0::2]
+                u = arr[1::4]
+                v = arr[3::4]
+                yuv = ones((len(y)) * 3, dtype=uint8)
+                yuv[::3] = y
+                yuv[1::6] = u
+                yuv[2::6] = v
+                yuv[4::6] = u
+                yuv[5::6] = v
+                yuv = reshape(yuv, (self.image_height, self.image_width, 3))
+
+                # Get the final RGB image
+                image = Image.fromarray(yuv, 'YCbCr').convert('RGB')
+                if self.save_image:  # If image needs to be saved, publish JPEG back on Redis
                     bytes_io = BytesIO()
-                    image.save(bytes_io)
+                    image.save(bytes_io, 'JPEG')
                     self.publish('picture_newfile', bytes_io.getvalue())
                     self.save_image = False
 
-                # Convert to OpenCV
-                ima = asarray(image, dtype=uint8)
-                image_res = resize(ima, width=min(self.image_width, ima.shape[1]))
-                process_image = cv2.cvtColor(image_res, cv2.COLOR_BGRA2RGB)
-
-                # Do the actual detection (TODO: distance metrics)
-                faces = face_locations(process_image)
-
+                # Do the actual detection
+                faces = face_locations(array(image))
                 if faces:
                     print(self.identifier + ': Detected Person!')
                     self.publish('detected_person', '')

@@ -1,13 +1,12 @@
-from io import BytesIO
 from os.path import isfile
 from pickle import load, dump
 from threading import Event, Thread
 
-import cv2
 import face_recognition
-import numpy as np
 from PIL import Image
 from cbsr.service import CBSRservice
+from cv2 import createBackgroundSubtractorMOG2, LUT
+from numpy import arange, argmin, array, frombuffer, ones, uint8, reshape
 
 
 class FaceRecognitionService(CBSRservice):
@@ -31,7 +30,7 @@ class FaceRecognitionService(CBSRservice):
             dump([], open(self.face_encoding_path, 'wb'))
         self.face_encodings_list = load(open(self.face_encoding_path, 'rb'))
         # Create a difference between background and foreground image
-        self.fgbg = cv2.createBackgroundSubtractorMOG2()
+        self.fgbg = createBackgroundSubtractorMOG2()
 
     def get_device_types(self):
         return ['cam']
@@ -64,24 +63,29 @@ class FaceRecognitionService(CBSRservice):
                 self.is_image_available = False
                 self.image_available_flag.clear()
 
-                # Create a PIL Image from the byte string redis result
+                # Get the raw bytes from Redis (should be in YUV422)
                 image_stream = self.redis.get(self.get_full_channel('image_stream'))
                 if self.image_width == 0:
                     image_size_string = self.redis.get(self.get_full_channel('image_size'))
                     self.image_width = int(image_size_string[0:4])
                     self.image_height = int(image_size_string[4:])
-                image = Image.frombytes('RGB', (self.image_width, self.image_height), image_stream)
 
-                # If image needs to be saved, publish it on Redis
-                if self.save_image:
-                    bytes_io = BytesIO()
-                    image.save(bytes_io)
-                    self.publish('picture_newfile', bytes_io.getvalue())
-                    self.save_image = False
+                # YUV type juggling (end up with YUV444 which PIL can read directly)
+                arr = frombuffer(image_stream, dtype=uint8)
+                y = arr[0::2]
+                u = arr[1::4]
+                v = arr[3::4]
+                yuv = ones((len(y)) * 3, dtype=uint8)
+                yuv[::3] = y
+                yuv[1::6] = u
+                yuv[2::6] = v
+                yuv[4::6] = u
+                yuv[5::6] = v
+                yuv = reshape(yuv, (self.image_height, self.image_width, 3))
 
-                # Convert to OpenCV
-                cv_image = cv2.cvtColor(np.asarray(image, dtype=np.uint8), cv2.COLOR_BGRA2RGB)
-                process_image = cv_image[:, :, ::-1]
+                # Get the final RGB image array
+                image = Image.fromarray(yuv, 'YCbCr').convert('RGB')
+                process_image = array(image)[:, :, ::-1]
 
                 # Manipulate process_image in order to help face recognition
                 # self.normalise_luminescence(process_image) FIXME: gives error?!
@@ -104,7 +108,7 @@ class FaceRecognitionService(CBSRservice):
                     else:
                         index = match.index(True)
                         tmp = str(index)
-                        if index == np.argmin(dist):
+                        if index == argmin(dist):
                             name = tmp
                             face_name.append(name)
                             print(self.identifier + ': Recognised existing face (' + name + ')')
@@ -129,11 +133,11 @@ class FaceRecognitionService(CBSRservice):
         # build a lookup table mapping the pixel values [0, 255] to
         # their adjusted gamma values such that any image has the same luminescence
         inv_gamma = 1.0 / gamma
-        table = np.array([((i / 255.0) ** inv_gamma) * 255
-                          for i in np.arange(0, 256)]).astype('uint8')
+        table = array([((i / 255.0) ** inv_gamma) * 255
+                       for i in arange(0, 256)]).astype(uint8)
 
         # apply gamma correction using the lookup table
-        return cv2.LUT(image, table, image)
+        return LUT(image, table, image)
 
     def cleanup(self):
         self.image_available_flag.set()

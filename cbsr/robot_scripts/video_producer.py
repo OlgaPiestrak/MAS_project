@@ -8,8 +8,7 @@ from qi import Application
 
 
 class VideoProcessingModule(CBSRdevice):
-    def __init__(self, session, name, server, username, password, resolution, colorspace, frame_ps, profiling):
-        self.colorspace = colorspace
+    def __init__(self, session, name, server, username, password, resolution, frame_ps, profiling):
         self.frame_ps = frame_ps
         # The watching thread will poll the camera 2 times the frame rate to make sure it is not the bottleneck.
         self.polling_sleep = 1 / (self.frame_ps * 2)
@@ -59,8 +58,7 @@ class VideoProcessingModule(CBSRdevice):
         # subscribe to the module (top camera)
         self.index += 1
         self.is_robot_watching = True
-        self.subscriber_id = self.video_service.subscribeCamera(self.module_name, 0, self.resolution,
-                                                                self.colorspace, self.frame_ps)
+        self.subscriber_id = self.video_service.subscribeCamera(self.module_name, 0, self.resolution, 9, self.frame_ps)
         print('Subscribed, starting watching thread...')
         watching_thread = Thread(target=self.watching, args=[self.subscriber_id])
         watching_thread.start()
@@ -88,7 +86,7 @@ class VideoProcessingModule(CBSRdevice):
         # start a loop until the stop signal is received
         while self.is_robot_watching:
             get_remote_start = self.profiling_start()
-            nao_image = self.video_service.getImageRemote(subscriber_id)
+            nao_image = self.video_service.getDirectRawImageRemote(subscriber_id)
             if nao_image is not None:
                 self.profiling_end('GET_REMOTE', get_remote_start)
                 send_img_start = self.profiling_start()
@@ -106,8 +104,7 @@ if __name__ == '__main__':
     parser.add_argument('--username', type=str, help='Username')
     parser.add_argument('--password', type=str, help='Password')
     parser.add_argument('--resolution', type=int, default=2, help='Naoqi image resolution')
-    parser.add_argument('--colorspace', type=int, default=11, help='Naoqi color channel')
-    parser.add_argument('--frame_ps', type=int, default=20, help='Framerate at which images are generated')
+    parser.add_argument('--frame_ps', type=int, default=15, help='Framerate at which images are generated')
     parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
 
@@ -117,8 +114,8 @@ if __name__ == '__main__':
         app.start()  # initialise
         video_processing = VideoProcessingModule(session=app.session, name=my_name, server=args.server,
                                                  username=args.username, password=args.password,
-                                                 resolution=args.resolution, colorspace=args.colorspace,
-                                                 frame_ps=args.frame_ps, profiling=args.profile)
+                                                 resolution=args.resolution, frame_ps=args.frame_ps,
+                                                 profiling=args.profile)
         # session_id = app.session.registerService(name, video_processing)
         app.run()  # blocking
         video_processing.shutdown()
