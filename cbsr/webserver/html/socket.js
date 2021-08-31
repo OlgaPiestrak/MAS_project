@@ -31,9 +31,6 @@ $(window).on('load', function() {
 	socket.onclose = function() {
 		body.html('');
 	};
-	document.ontouchmove = function(evt) {
-		evt.preventDefault();
-	};
 });
 $(window).on('unload', function() {
 	if( socket ) socket.close();
@@ -66,7 +63,7 @@ function activateButtons() {
 	$(':button').click(function() {
 		var dataValue = $(this).children().data('value');
 		if( dataValue ) {
-			socket.send('browser_button|'+dataValue);
+			socket.send('browser_button|'+dataValue);		
 		} else {
 			var txt = document.createElement('textarea');
 			txt.innerHTML = $(this).html();

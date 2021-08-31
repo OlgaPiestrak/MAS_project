@@ -27,7 +27,7 @@ class VideoProcessingModule(CBSRdevice):
         if resolution in possible_resolutions.keys():
             self.resolution = resolution
             self.redis.set(self.get_full_channel('image_size'),
-                           str(possible_resolutions[resolution][0]) + ' ' + str(possible_resolutions[resolution][1]))
+                           str(possible_resolutions[resolution][0]) + ' ' + str(possible_resolutions[resolution][1]) + ' YUV')
         else:
             raise ValueError(str(resolution) + ' is not a valid resolution')
 

@@ -16,6 +16,7 @@ class FaceRecognitionService(CBSRservice):
         # Image size (filled later)
         self.image_width = 0
         self.image_height = 0
+        self.color_space = None
         # Thread data
         self.is_recognizing = False
         self.save_image = False
@@ -63,28 +64,34 @@ class FaceRecognitionService(CBSRservice):
                 self.is_image_available = False
                 self.image_available_flag.clear()
 
-                # Get the raw bytes from Redis (should be in YUV422)
+                # Get the raw bytes from Redis
                 image_stream = self.redis.get(self.get_full_channel('image_stream'))
-                if self.image_width == 0:
-                    image_size_string = self.redis.get(self.get_full_channel('image_size'))
-                    self.image_width = int(image_size_string[0:4])
-                    self.image_height = int(image_size_string[4:])
+                if self.image_width == 0 or self.image_height == 0:
+                    image_size = self.redis.get(self.get_full_channel('image_size')).split()
+                    self.image_width = image_size[0]
+                    self.image_height = image_size[1]
+                    self.color_space = image_size[2]
 
-                # YUV type juggling (end up with YUV444 which PIL can read directly)
-                arr = frombuffer(image_stream, dtype=uint8)
-                y = arr[0::2]
-                u = arr[1::4]
-                v = arr[3::4]
-                yuv = ones((len(y)) * 3, dtype=uint8)
-                yuv[::3] = y
-                yuv[1::6] = u
-                yuv[2::6] = v
-                yuv[4::6] = u
-                yuv[5::6] = v
-                yuv = reshape(yuv, (self.image_height, self.image_width, 3))
+                if self.color_space == 'RGB':
+                    image = Image.frombytes('RGB', (self.image_width, self.image_height), image_stream)
+                elif self.color_space == 'YUV':
+                    # YUV type juggling (end up with YUV444 which is YCbCr which PIL can read directly)
+                    image_array = frombuffer(image_stream, dtype=uint8)
+                    y = image_array[0::2]
+                    u = image_array[1::4]
+                    v = image_array[3::4]
+                    yuv = ones((len(y)) * 3, dtype=uint8)
+                    yuv[::3] = y
+                    yuv[1::6] = u
+                    yuv[2::6] = v
+                    yuv[4::6] = u
+                    yuv[5::6] = v
+                    yuv = reshape(yuv, (self.image_height, self.image_width, 3))
+                    image = Image.fromarray(yuv, 'YCbCr').convert('RGB')
+                else:
+                    print('Unknown color space: ' + self.color_space)
+                    continue
 
-                # Get the final RGB image array
-                image = Image.fromarray(yuv, 'YCbCr').convert('RGB')
                 process_image = array(image)[:, :, ::-1]
 
                 # Manipulate process_image in order to help face recognition

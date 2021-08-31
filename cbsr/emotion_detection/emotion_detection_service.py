@@ -22,6 +22,7 @@ class EmotionDetectionService(CBSRservice):
         # Image size (filled later)
         self.image_width = 0
         self.image_height = 0
+        self.color_space = None
         # Thread data
         self.is_detecting = False
         self.save_image = False
@@ -68,13 +69,33 @@ class EmotionDetectionService(CBSRservice):
                 self.is_image_available = False
                 self.image_available_flag.clear()
 
-                # Create a PIL Image from byte string from redis result
+                # Get the raw bytes from Redis
                 image_stream = self.redis.get(self.get_full_channel('image_stream'))
-                if self.image_width == 0:
-                    image_size_string = self.redis.get(self.get_full_channel('image_size'))
-                    self.image_width = int(image_size_string[0:4])
-                    self.image_height = int(image_size_string[4:])
-                image = Image.frombytes('RGB', (self.image_width, self.image_height), image_stream)
+                if self.image_width == 0 or self.image_height == 0:
+                    image_size = self.redis.get(self.get_full_channel('image_size')).split()
+                    self.image_width = image_size[0]
+                    self.image_height = image_size[1]
+                    self.color_space = image_size[2]
+
+                if self.color_space == 'RGB':
+                    image = Image.frombytes('RGB', (self.image_width, self.image_height), image_stream)
+                elif self.color_space == 'YUV':
+                    # YUV type juggling (end up with YUV444 which is YCbCr which PIL can read directly)
+                    image_array = np.frombuffer(image_stream, dtype=np.uint8)
+                    y = image_array[0::2]
+                    u = image_array[1::4]
+                    v = image_array[3::4]
+                    yuv = np.ones((len(y)) * 3, dtype=np.uint8)
+                    yuv[::3] = y
+                    yuv[1::6] = u
+                    yuv[2::6] = v
+                    yuv[4::6] = u
+                    yuv[5::6] = v
+                    yuv = np.reshape(yuv, (self.image_height, self.image_width, 3))
+                    image = Image.fromarray(yuv, 'YCbCr').convert('RGB')
+                else:
+                    print('Unknown color space: ' + self.color_space)
+                    continue
 
                 ima = np.asarray(image, dtype=np.uint8)
                 frame = resize(ima, width=min(self.image_width, ima.shape[1]))
