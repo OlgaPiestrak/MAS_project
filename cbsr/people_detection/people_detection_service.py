@@ -56,8 +56,8 @@ class PeopleDetectionService(CBSRservice):
                 image_stream = self.redis.get(self.get_full_channel('image_stream'))
                 if self.image_width == 0 or self.image_height == 0:
                     image_size = self.redis.get(self.get_full_channel('image_size')).split()
-                    self.image_width = image_size[0]
-                    self.image_height = image_size[1]
+                    self.image_width = int(image_size[0])
+                    self.image_height = int(image_size[1])
                     self.color_space = image_size[2]
 
                 if self.color_space == 'RGB':

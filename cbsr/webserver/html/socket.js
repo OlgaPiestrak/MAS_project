@@ -63,7 +63,7 @@ function activateButtons() {
 	$(':button').click(function() {
 		var dataValue = $(this).children().data('value');
 		if( dataValue ) {
-			socket.send('browser_button|'+dataValue);		
+			socket.send('browser_button|'+dataValue);
 		} else {
 			var txt = document.createElement('textarea');
 			txt.innerHTML = $(this).html();
