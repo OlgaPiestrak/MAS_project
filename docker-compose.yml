@@ -266,7 +266,7 @@ services:
   # Dialogflow service
   # ------------------------------------------------------------
   dialogflow:
-    image: openjdk:${JAVA}-slim
+    image: eclipse-temurin:${JAVA}
     hostname: dialogflow
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
@@ -291,7 +291,7 @@ services:
   # Web Server service
   # ------------------------------------------------------------
   webserver:
-    image: openjdk:${JAVA}-slim
+    image: eclipse-temurin:${JAVA}
     hostname: webserver
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
@@ -376,7 +376,7 @@ services:
   # Stream Video service
   # ------------------------------------------------------------
   stream_video:
-    image: openjdk:${JAVA}-slim
+    image: eclipse-temurin:${JAVA}
     hostname: stream_video
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
@@ -404,7 +404,7 @@ services:
   # Stream Audio service
   # ------------------------------------------------------------
   stream_audio:
-    image: openjdk:${JAVA}-slim
+    image: eclipse-temurin:${JAVA}
     hostname: stream_audio
     user: "${NEW_UID}:${NEW_GID}"
     env_file:
