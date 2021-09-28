@@ -98,7 +98,7 @@ class HomeController
         } else {
             $cmd = $params['cmd'] ?? '';
             if (empty($cmd)) {
-                return $response->withStatus(422, 'No actual command given.');                
+                return $response->withStatus(422, 'No command given.');                
             } else {
                 $data = $params['data'] ?? '';
                 $dir = __DIR__;

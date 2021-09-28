@@ -21,20 +21,29 @@ $(function () {
 					var form = '<form id="fav'+i+'">';
 					var isField = (entry.type === 'field');
 					if(isField) form += '<input type="text" class="form-control">';
-    				var buttonStyle = entry.hasOwnProperty('style') ? entry.style : 'primary';
+    				var buttonStyle = ('style' in entry) ? entry.style : 'primary';
     				form += '<button type="submit" class="btn btn-'+buttonStyle+' ml-1 mb-1">'+entry.name+'</button>';
     				favs.append(form+'</form>');
     				$('#fav'+i).on('click', ':submit', function() {
     					var type = 'robot';
     					if(entry.action.startsWith('action_say') || entry.action.startsWith('action_speech') ||
-    	    					entry.action.startsWith('audio_') || entry.action === 'action_stop_talking') {
+    	    				entry.action.startsWith('audio_') || entry.action === 'action_stop_talking') {
     						type = 'speaker';
+    					} else if(entry.action.startsWith('session_')) {
+    						type = 'logger';
     					} else if(entry.action === 'render_html') {
     						type = 'browser';
     					}
     					var data = isField ? $(this).prev().val() : entry.data;
+
     					$.post('command', {id:(username+'-'+devices[type]), cmd:entry.action, data:data});
     					if(isField) $(this).prev().val('');
+
+    					var shouldLog = ('log' in entry) ? entry.log : true;
+    					if(type !== 'logger' && shouldLog && 'logger' in devices) {
+        					$.post('command', {id:(username+'-'+devices['logger']), cmd:'session_log', data:entry.action+'|'+data});
+    					}
+
     					return false;
     				});
 				}
