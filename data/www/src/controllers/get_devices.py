@@ -8,7 +8,6 @@ from redis import Redis
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--username', type=str, help='Username', default='default')
-    parser.add_argument('--password', type=str, help='Password', default='changemeplease')
     args = parser.parse_args()
 
     host = getenv('DB_IP')
@@ -23,6 +22,6 @@ if __name__ == '__main__':
     devices = redis.zrevrangebyscore(name='user:' + args.username, min=(time() - 60), max='+inf')
     devices.sort()
     for device in devices:
-        print(device)
+        print(device.decode())
 
     redis.close()

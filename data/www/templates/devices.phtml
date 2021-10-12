@@ -1,6 +1,7 @@
 <script type="text/javascript">
 var username = 'default';
 var devices = [];
+var socket = null;
 $(function () {
     $.get('devices', [], function(response) {
         var devices = response.split("\n");
@@ -24,12 +25,28 @@ $(function () {
     $('#deviceForm').on('submit', function() {
         $.post('devices', $(this).serialize(), function(response){
             devices=JSON.parse(response);
+            if(false /*'logger' in devices*/) {
+            	socket = new WebSocket('ws://' + window.location.hostname + ':8080');
+            	socket.onopen = function() {
+                	console.log(username+'-'+devices['logger']);
+            		socket.send(username+'-'+devices['logger']);
+            	};
+            	socket.onmessage = function(event) {
+            		console.log(event);
+            	}
+            	socket.onerror = function(error) {
+            		console.log(error);
+            	}
+            }
             $('#devices').remove();
             $('#control').show();
             $('#favourites').show();
         });
         return false;
     });
+});
+$(window).on('unload', function() {
+	if( socket ) socket.close();
 });
 </script>
 <h3>Devices</h3>

@@ -91,6 +91,9 @@ services:
       docker.for.lin.host.internal: 172.16.238.1
       docker.for.lin.localhost: 172.16.238.1
 
+    ports:
+      - "8080:8080"
+
     networks:
       app_net:
         ipv4_address: 172.16.238.10

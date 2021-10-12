@@ -6,8 +6,6 @@ from redis import Redis
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--username', type=str, help='Username', default='default')
-    parser.add_argument('--password', type=str, help='Password', default='changemeplease')
     parser.add_argument('--identifier', type=str, help='The device identifier')
     parser.add_argument('--command', type=str, help='startcam, startmic, stopcam, stopmic')
     args = parser.parse_args()

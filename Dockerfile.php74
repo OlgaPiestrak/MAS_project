@@ -5,3 +5,5 @@ RUN apt-key adv --refresh-keys --keyserver hkp://keyserver.ubuntu.com:80 \
     && apt-get clean && rm -rf /tmp/* /var/tmp/*
 
 RUN pip3 install --no-cache-dir --upgrade redis~=3.5 hiredis~=1.1 websockets~=10.0
+
+CMD (python3 /var/www/default/src/controllers/ws_server.py &) ; php-fpm
