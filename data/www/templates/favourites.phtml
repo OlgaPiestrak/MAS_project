@@ -34,7 +34,9 @@ $(function () {
     					} else if(entry.action === 'render_html') {
     						type = 'browser';
     					}
-    					var data = isField ? $(this).prev().val() : entry.data;
+    					var data = '';
+    					if(isField) data = $(this).prev().val();
+    					else if('data' in entry) data = entry.data;
 
     					$.post('command', {id:(username+'-'+devices[type]), cmd:entry.action, data:data});
     					if(isField) $(this).prev().val('');
