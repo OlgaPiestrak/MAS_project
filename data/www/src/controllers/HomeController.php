@@ -24,7 +24,7 @@ class HomeController
     public function get_devices(Request $request, Response $response, $args)
     {
         $dir = __DIR__;
-        echo self::exec("python -u $dir/get_devices.py");
+        echo self::exec("python3 $dir/get_devices.py");
     }
 
     public function set_devices(Request $request, Response $response, $args)
@@ -49,7 +49,7 @@ class HomeController
             return $response->withStatus(422, 'Please select a camera device first.');
         } else {
             $dir = __DIR__;
-            echo self::exec("python -u $dir/feed.py --identifier $identifier --command startcam");
+            echo self::exec("python3 $dir/feed.py --identifier $identifier --command startcam");
         }
     }
     
@@ -61,7 +61,7 @@ class HomeController
             return $response->withStatus(422, 'Please select a microphone device first.');
         } else {
             $dir = __DIR__;
-            echo self::exec("python -u $dir/feed.py --identifier $identifier --command startmic");
+            echo self::exec("python3 $dir/feed.py --identifier $identifier --command startmic");
         }
     }
     
@@ -73,7 +73,7 @@ class HomeController
             return $response->withStatus(422, 'Please select a camera device first.');
         } else {
             $dir = __DIR__;
-            echo self::exec("python -u $dir/feed.py --identifier $identifier --command stopcam");
+            echo self::exec("python3 $dir/feed.py --identifier $identifier --command stopcam");
         }
     }
     
@@ -85,7 +85,7 @@ class HomeController
             return $response->withStatus(422, 'Please select a microphone device first.');
         } else {
             $dir = __DIR__;
-            echo self::exec("python -u $dir/feed.py --identifier $identifier --command stopmic");
+            echo self::exec("python3 $dir/feed.py --identifier $identifier --command stopmic");
         }
     }    
 
@@ -102,7 +102,7 @@ class HomeController
             } else {
                 $data = $params['data'] ?? '';
                 $dir = __DIR__;
-                echo self::exec("python -u $dir/commands.py --identifier $identifier --command $cmd --data \"$data\"");
+                echo self::exec("python3 $dir/commands.py --identifier $identifier --command $cmd --data \"$data\"");
             }
         }
     }
@@ -123,7 +123,7 @@ class HomeController
         }
 
         $dir = __DIR__;
-        echo self::exec("python -u $dir/register_user.py --username $username --password $password");
+        echo self::exec("python3 $dir/register_user.py --username $username --password $password");
     }
 
     /**
