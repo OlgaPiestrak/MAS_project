@@ -460,6 +460,34 @@ services:
     depends_on:
       - redis
 
+  # ------------------------------------------------------------
+  # Corona Checker service
+  # ------------------------------------------------------------
+  coronachecker:
+    image: python3
+    build:
+      context: .
+      dockerfile: Dockerfile.python3
+    hostname: coronachecker
+    user: "${NEW_UID}:${NEW_GID}"
+    env_file:
+      - ./.env
+
+    working_dir: /coronacheck
+    command: python corona_check_factory.py
+    volumes:
+      - ./cbsr/corona_check:/coronacheck:rw${MOUNT_OPTIONS}
+
+    tty: true
+    stdin_open: false
+
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.22
+
+    depends_on:
+      - redis
+
 ################################################################################
 # NETWORK
 ################################################################################

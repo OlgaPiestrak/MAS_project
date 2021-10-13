@@ -25,7 +25,6 @@ class EmotionDetectionService(CBSRservice):
         self.color_space = None
         # Thread data
         self.is_detecting = False
-        self.save_image = False
         self.is_image_available = False
         self.image_available_flag = Event()
         # Emotion detection parameters
@@ -120,7 +119,7 @@ class EmotionDetectionService(CBSRservice):
                     self.publish('detected_emotion', emotion_text)
             else:
                 self.image_available_flag.wait()
-        self.produce_event('EmotionDetectionStarted')
+        self.produce_event('EmotionDetectionDone')
 
     def set_image_available(self, message):
         if not self.is_image_available:
