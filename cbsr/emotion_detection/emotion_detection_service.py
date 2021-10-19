@@ -96,8 +96,7 @@ class EmotionDetectionService(CBSRservice):
                     print('Unknown color space: ' + self.color_space)
                     continue
 
-                ima = np.asarray(image, dtype=np.uint8)
-                frame = resize(ima, width=min(self.image_width, ima.shape[1]))
+                frame = resize(np.array(image), width=min(self.image_width, ima.shape[1]))
                 gray_image = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
                 rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGRA2RGB)
 
