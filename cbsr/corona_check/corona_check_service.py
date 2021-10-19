@@ -1,13 +1,12 @@
 from os import environ
 from threading import Event, Thread
-from time import time_ns
 
 import numpy as np
 from PIL import Image
 from cbsr.service import CBSRservice
 from coronacheck_tools.clitools import convert
 from coronacheck_tools.verification.verifier import validate_raw
-from cv2 import cvtColor, COLOR_BGRA2RGB, imwrite
+from cv2 import cvtColor, COLOR_BGRA2RGB
 
 
 class CoronaCheckService(CBSRservice):
@@ -86,7 +85,7 @@ class CoronaCheckService(CBSRservice):
                     continue
 
                 input_data = cvtColor(np.array(image), COLOR_BGRA2RGB)
-                imwrite('/coronacheck/' + str(time_ns()) + '.jpg', input_data)
+                # imwrite('/coronacheck/' + str(time_ns()) + '.jpg', input_data)
 
                 data = convert('QR', input_data, 'RAW')
                 if isinstance(data, list):

@@ -103,7 +103,7 @@ if __name__ == '__main__':
     parser.add_argument('--server', type=str, help='Server IP address')
     parser.add_argument('--username', type=str, help='Username')
     parser.add_argument('--password', type=str, help='Password')
-    parser.add_argument('--resolution', type=int, default=3, help='Naoqi image resolution')
+    parser.add_argument('--resolution', type=int, default=2, help='Naoqi image resolution')
     parser.add_argument('--frame_ps', type=int, default=15, help='Framerate at which images are generated')
     parser.add_argument('--profile', '-p', action='store_true', help='Enable profiling')
     args = parser.parse_args()
