@@ -1,12 +1,13 @@
 from os import environ
 from threading import Event, Thread
+from time import time_ns
 
 import numpy as np
 from PIL import Image
 from cbsr.service import CBSRservice
 from coronacheck_tools.clitools import convert
 from coronacheck_tools.verification.verifier import validate_raw
-from cv2 import cvtColor, COLOR_BGRA2RGB
+from cv2 import cvtColor, COLOR_BGRA2RGB, imwrite
 
 
 class CoronaCheckService(CBSRservice):
@@ -85,13 +86,15 @@ class CoronaCheckService(CBSRservice):
                     continue
 
                 input_data = cvtColor(np.array(image), COLOR_BGRA2RGB)
+                imwrite('/coronacheck/' + str(time_ns()) + '.jpg', input_data)
 
                 data = convert('QR', input_data, 'RAW')
                 if isinstance(data, list):
-                    data = data[0]  # if we have multiple QR codes only verify the first one
-                result = validate_raw(data, allow_international=self.allow_international)
-                if result[0]:
-                    self.publish('corona_check', '1')
+                    data = data[0] if len(data) > 0 else None  # if we have multiple QR codes only verify the first one
+                if data:
+                    result = validate_raw(data, allow_international=self.allow_international)
+                    if result[0]:
+                        self.publish('corona_check', '1')
             else:
                 self.image_available_flag.wait()
         self.produce_event('CoronaCheckDone')
