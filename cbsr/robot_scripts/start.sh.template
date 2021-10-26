@@ -16,10 +16,10 @@ echo "Installing..."
 
 PIP="20.3.4"
 if ! ../.local/bin/pip -V | grep -q "$PIP"; then
-    /usr/bin/pip install --user --upgrade pip==$PIP
+    /usr/bin/pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --user --upgrade pip==$PIP
 fi
 
-../.local/bin/pip install --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 pandas~=0.20 wheel~=0.36
+../.local/bin/pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 pandas~=0.20 wheel~=0.36
 ../.local/bin/pip install --user .
 
 nohup python -u action_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > action_consumer.log 2>&1 & echo $! > action_consumer.pid
