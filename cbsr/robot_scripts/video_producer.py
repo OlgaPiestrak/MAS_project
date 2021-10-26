@@ -67,6 +67,8 @@ class VideoProcessingModule(CBSRdevice):
             print('Using top camera at 640x480...')
             self.camera_index = 0  # top camera
             self.resolution_index = 2
+            if self.robot.type == 'pepper':  # enable auto-focus on Pepper
+                self.video_service.setParameter(self.camera_index, 40, 1)
 
         self.subscriber_id = self.video_service.subscribeCamera(self.module_name, self.camera_index,
                                                                 self.resolution_index, self.color_index, self.frame_ps)
