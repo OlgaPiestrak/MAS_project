@@ -1,9 +1,11 @@
 from argparse import ArgumentParser
-from cbsr.device import CBSRdevice
-from qi import Application
+from datetime import datetime
 from sys import exit
 from threading import Thread
 from time import sleep
+
+from cbsr.device import CBSRdevice
+from qi import Application
 
 
 class VideoProcessingModule(CBSRdevice):
@@ -11,6 +13,7 @@ class VideoProcessingModule(CBSRdevice):
         self.frame_ps = 15  # lowest native FPS (shared by normal & stereo)
         # The watching thread will poll the camera at 2 times the frame rate to make sure it is not a bottleneck
         self.polling_sleep = 1 / (self.frame_ps * 2)
+        self.epoch = datetime.utcfromtimestamp(0)
 
         # Get robot body type (nao or pepper)
         self.robot_type = session.service('ALMemory').getData('RobotConfig/Body/Type').lower()
@@ -58,7 +61,7 @@ class VideoProcessingModule(CBSRdevice):
         self.is_robot_watching = True
 
         # fetch the camera config (if any)
-        video_channels = self.get_full_channel('audio_channels')
+        video_channels = self.get_full_channel('video_channels')
         if video_channels == '2' and self.robot_type == 'pepper':
             print('Using stereo camera at 1280x360...')
             self.camera_index = 3  # stereo camera
@@ -103,11 +106,12 @@ class VideoProcessingModule(CBSRdevice):
             get_remote_start = self.profiling_start()
             nao_image = self.video_service.getDirectRawImageRemote(subscriber_id)
             if nao_image is not None:
+                unix_time_millis = int((datetime.utcnow() - self.epoch).total_seconds() * 1000.0)
                 self.profiling_end('GET_REMOTE', get_remote_start)
                 send_img_start = self.profiling_start()
                 pipe = self.redis.pipeline()
                 pipe.set(self.get_full_channel('image_stream'), bytes(nao_image[6]))
-                pipe.publish(self.get_full_channel('image_available'), '')
+                pipe.publish(self.get_full_channel('image_available'), str(unix_time_millis))
                 pipe.execute()
                 self.profiling_end('SEND_IMG', send_img_start)
             sleep(self.polling_sleep)
