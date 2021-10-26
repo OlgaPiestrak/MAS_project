@@ -59,7 +59,7 @@ class VideoProcessingModule(CBSRdevice):
 
         # fetch the camera config (if any)
         video_channels = self.get_full_channel('audio_channels')
-        if video_channels == '2' and self.robot.type == 'pepper':
+        if video_channels == '2' and self.robot_type == 'pepper':
             print('Using stereo camera at 1280x360...')
             self.camera_index = 3  # stereo camera
             self.resolution_index = 14
@@ -67,7 +67,7 @@ class VideoProcessingModule(CBSRdevice):
             print('Using top camera at 640x480...')
             self.camera_index = 0  # top camera
             self.resolution_index = 2
-            if self.robot.type == 'pepper':  # enable auto-focus on Pepper
+            if self.robot_type == 'pepper':  # enable auto-focus on Pepper
                 self.video_service.setParameter(self.camera_index, 40, 1)
 
         self.subscriber_id = self.video_service.subscribeCamera(self.module_name, self.camera_index,
