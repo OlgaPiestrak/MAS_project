@@ -1,12 +1,9 @@
 from argparse import ArgumentParser
+from cbsr.device import CBSRdevice
+from qi import Application
 from sys import exit
 from threading import Thread
 from time import sleep
-
-from cbsr.device import CBSRdevice
-from qi import Application
-
-SAMPLE_RATE = 16000
 
 
 class SoundProcessingModule(CBSRdevice):
