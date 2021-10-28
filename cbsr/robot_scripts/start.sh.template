@@ -14,7 +14,7 @@ done
 
 echo "Installing..."
 
-INDEX="--trusted-host mirrors.aliyun.com --index-url http://mirrors.aliyun.com/pypi/simple"
+INDEX="--trusted-host mirrors.sustech.edu.cn --index-url http://mirrors.sustech.edu.cn/pypi/simple/"
 if ! ../.local/bin/pip -V | grep -q "20.3.4"; then
 	curl -sSL http://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py && python get-pip.py $INDEX
 fi
