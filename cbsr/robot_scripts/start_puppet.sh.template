@@ -14,13 +14,12 @@ done
 
 echo "[PUPPET MODE] Installing..."
 
-PIP="20.3.4"
-if ! ../.local/bin/pip -V | grep -q "$PIP"; then
-    /usr/bin/pip install --user --upgrade pip==$PIP
+INDEX="--trusted-host mirrors.aliyun.com --index-url http://mirrors.aliyun.com/pypi/simple"
+if ! ../.local/bin/pip -V | grep -q "20.3.4"; then
+	curl -sSL http://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py && python get-pip.py $INDEX
 fi
 
-../.local/bin/pip install --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 wheel~=0.36
-../.local/bin/pip install --user .
+../.local/bin/pip install $INDEX --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 .
 
 nohup python -u puppet.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > puppet.log 2>&1 & echo $! > puppet.pid
 

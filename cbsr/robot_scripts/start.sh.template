@@ -19,7 +19,7 @@ if ! ../.local/bin/pip -V | grep -q "20.3.4"; then
 	curl -sSL http://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py && python get-pip.py $INDEX
 fi
 
-../.local/bin/pip install $INDEX --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 pandas~=0.24 .
+../.local/bin/pip install $INDEX --user --upgrade --prefer-binary redis~=3.5 hiredis~=1.1 .
 
 nohup python -u action_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > action_consumer.log 2>&1 & echo $! > action_consumer.pid
 nohup python -u audio_consumer.py --server "$SERVER" --username "$USER" --password "$PASS" $EXTRA > audio_consumer.log 2>&1 & echo $! > audio_consumer.pid
