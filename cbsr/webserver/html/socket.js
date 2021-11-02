@@ -1,10 +1,11 @@
 var socket = null;
 $(window).on('load', function() {
 	var body = $(document.body);
-	body.html('+');
-	socket = new WebSocket('ws://' + window.location.hostname + ':8001');
+	body.html('Connecting to server...');
+	var id = Date.now().toString(36).substring(4) + Math.random().toString(36).substring(2);
+	socket = new WebSocket('ws://' + window.location.hostname + ':8001?id=' + id);
 	socket.onopen = function() {
-		body.html('*');
+		body.html('Connected! ' + id);
 	};
 	socket.onmessage = function(event) {
 		var data = JSON.parse(event.data);
@@ -29,7 +30,7 @@ $(window).on('load', function() {
 		else alert(error);
 	};
 	socket.onclose = function() {
-		body.html('');
+		body.html('Disconnected');
 	};
 });
 $(window).on('unload', function() {
