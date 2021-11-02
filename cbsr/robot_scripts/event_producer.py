@@ -1,9 +1,8 @@
 from argparse import ArgumentParser
-from functools import partial
-from sys import exit
-
 from cbsr.device import CBSRdevice
+from functools import partial
 from qi import Application
+from sys import exit
 
 
 class EventProcessingModule(CBSRdevice):
@@ -35,6 +34,8 @@ class EventProcessingModule(CBSRdevice):
         self.add_event('ALTextToSpeech/TextStarted', self.on_text_started)
         self.add_event('ALTextToSpeech/TextDone', self.on_text_done)
         self.add_event('ALTextToSpeech/TextInterrupted', self.on_text_done)
+        self.add_event('ALMotion/Safety/ChainVelocityClipped', self.on_move_failed)
+        self.add_event('ALMotion/MoveFailed', self.on_move_failed)
 
         super(EventProcessingModule, self).__init__(server, username, password, profiling)
 
@@ -120,6 +121,10 @@ class EventProcessingModule(CBSRdevice):
         if is_done:
             self.produce('TextDone')
             print('TextDone')
+
+    def on_move_failed(self, event_name, value):
+        self.produce('MoveFailed')
+        print('MoveFailed: ' + str(value))
 
 
 if __name__ == '__main__':
