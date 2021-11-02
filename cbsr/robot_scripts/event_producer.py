@@ -34,7 +34,6 @@ class EventProcessingModule(CBSRdevice):
         self.add_event('ALTextToSpeech/TextStarted', self.on_text_started)
         self.add_event('ALTextToSpeech/TextDone', self.on_text_done)
         self.add_event('ALTextToSpeech/TextInterrupted', self.on_text_done)
-        self.add_event('ALMotion/Safety/ChainVelocityClipped', self.on_move_failed)
         self.add_event('ALMotion/MoveFailed', self.on_move_failed)
 
         super(EventProcessingModule, self).__init__(server, username, password, profiling)
