@@ -1,13 +1,13 @@
 from argparse import ArgumentParser
-from threading import Thread
-from time import sleep
-
 from cbsr.device import CBSRdevice
 from qi import Application
 from simplejson import dumps, loads
+from threading import Thread
+from time import sleep
 
 from colors import Colors
-#from transformation import Transformation
+
+# from transformation import Transformation
 
 # Factors to set the decimal precision for motion angles and times for compression.
 # When a motion is compressed the respective motion decimal values will be converted to an int. To preserve the
@@ -25,6 +25,7 @@ class RobotConsumer(CBSRdevice):
         self.awareness = session.service('ALBasicAwareness')
         self.awareness.setEngagementMode('FullyEngaged')
         self.motion = session.service('ALMotion')
+        self.motion.killAll()
         self.posture = session.service('ALRobotPosture')
         self.memory = session.service('ALMemory')
 
@@ -139,8 +140,8 @@ class RobotConsumer(CBSRdevice):
         elif channel == 'action_motion_file':
             params = data.split(';')
             animation = params[0]
-            #emotion = params[1] if (len(params) > 1) else None
-            #transformed = Transformation(animation, emotion).get_behavior()
+            # emotion = params[1] if (len(params) > 1) else None
+            # transformed = Transformation(animation, emotion).get_behavior()
             self.process_action_play_motion(animation, False)
         elif channel == 'action_led_color':
             self.process_action_led_color(data)
