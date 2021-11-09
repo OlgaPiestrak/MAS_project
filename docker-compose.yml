@@ -92,7 +92,7 @@ services:
       docker.for.lin.localhost: 172.16.238.1
 
     ports:
-      - "8080:8080"
+      - "8004:8004"
 
     networks:
       app_net:

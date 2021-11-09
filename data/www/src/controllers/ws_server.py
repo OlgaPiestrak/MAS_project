@@ -19,6 +19,6 @@ def message_received(client, server, message):
     pubsub.run_in_thread(sleep_time=0.001)
 
 
-server = WebsocketServer(host='0.0.0.0', port=8080)
-server.set_fn_message_received(message_received)
-server.run_forever()
+socket_server = WebsocketServer(host='0.0.0.0', port=8004)
+socket_server.set_fn_message_received(message_received)
+socket_server.run_forever()

@@ -26,16 +26,18 @@ $(function () {
         $.post('devices', $(this).serialize(), function(response){
             devices=JSON.parse(response);
             if('logger' in devices) {
-            	socket = new WebSocket('ws://' + window.location.hostname + ':8080');
+            	var logsText = $('#logs_text');
+            	socket = new WebSocket('ws://' + window.location.hostname + ':8004');
             	socket.onopen = function() {
             		socket.send(username+'-'+devices['logger']);
             	};
             	socket.onmessage = function(event) {
-            		console.log(event.data);
+            		logsText.val(event.data+"\n"+logsText.val());
             	}
             	socket.onerror = function(error) {
             		console.log(error);
             	}
+            	$('#logs').removeClass('d-none');
             }
             $('#devices').remove();
             $('#control').show();
