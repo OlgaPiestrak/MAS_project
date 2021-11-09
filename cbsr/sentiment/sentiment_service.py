@@ -11,10 +11,12 @@ from nltk.tokenize import word_tokenize
 class SentimentAnalysisService(CBSRservice):
     def __init__(self, connect, identifier, disconnect):
         super(SentimentAnalysisService, self).__init__(connect, identifier, disconnect)
-        self.classifier = load('classifier.pickle')
+        with open('classifier.pickle', 'rb') as pickle:
+            self.classifier = load(pickle)
+        self.lemmatizer = WordNetLemmatizer()
 
     def get_device_types(self):
-        return ['mic', 'browser']  # audio+chat
+        return ['mic']
 
     def get_channel_action_mapping(self):
         return {self.get_full_channel('text_transcript'): self.execute}
@@ -39,9 +41,7 @@ class SentimentAnalysisService(CBSRservice):
             else:
                 pos = 'a'
 
-            lemmatizer = WordNetLemmatizer()
-            token = lemmatizer.lemmatize(token, pos)
-
+            token = self.lemmatizer.lemmatize(token, pos)
             if len(token) > 0 and token not in punctuation:
                 cleaned_tokens.append(token.lower())
 
