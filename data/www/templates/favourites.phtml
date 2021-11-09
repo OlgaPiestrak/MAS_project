@@ -52,8 +52,8 @@ $(function () {
         					else if(c > 0 && ('data_'+c) in entry) data = entry['data_'+c];
         					
         					if(data.indexOf('{0}') !== -1) {
-        						var replacement = prompt(data);
-        						data = data.format(replacement);
+        						var replacement = prompt(data).split(';');
+        						data = data.format(...replacement);
         					}
     
         					$.post('command', {id:(username+'-'+devices[type]), cmd:action, data:data});
