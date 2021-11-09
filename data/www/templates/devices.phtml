@@ -25,14 +25,13 @@ $(function () {
     $('#deviceForm').on('submit', function() {
         $.post('devices', $(this).serialize(), function(response){
             devices=JSON.parse(response);
-            if(false /*'logger' in devices*/) {
+            if('logger' in devices) {
             	socket = new WebSocket('ws://' + window.location.hostname + ':8080');
             	socket.onopen = function() {
-                	console.log(username+'-'+devices['logger']);
             		socket.send(username+'-'+devices['logger']);
             	};
             	socket.onmessage = function(event) {
-            		console.log(event);
+            		console.log(event.data);
             	}
             	socket.onerror = function(error) {
             		console.log(error);

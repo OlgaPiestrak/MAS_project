@@ -1,35 +1,24 @@
-import asyncio
-from os import getenv
 from os.path import abspath, dirname
 
-import websockets
 from redis import Redis
+from websocket_server import WebsocketServer
 
 TOPICS = ['session_start', 'session_log', 'session_end']
 
 
-async def producer(websocket, path):
-    loggerId = await websocket.recv()
-    print(loggerId)
+def message_received(client, server, message):
+    print(message)
 
-    host = getenv('DB_IP')
-    password = getenv('DB_PASS')
-    self_signed = getenv('DB_SSL_SELFSIGNED')
-    if self_signed == '1':
-        cert_file = dirname(abspath(__file__)) + '/cert.pem'
-        redis = Redis(host=host, ssl=True, ssl_ca_certs=cert_file, password=password)
-    else:
-        redis = Redis(host=host, ssl=True, password=password)
+    cert_file = dirname(abspath(__file__)) + '/cert.pem'
+    redis = Redis(host='172.16.238.12', ssl=True, ssl_ca_certs=cert_file, password='changemeplease')
 
     pubsub = redis.pubsub(ignore_subscribe_messages=True)
-    mapping = dict.fromkeys(((loggerId + '_' + t) for t in TOPICS), lambda msg: websocket.send(msg))
+    mapping = dict.fromkeys(((message + '_' + t) for t in TOPICS),
+                            lambda msg: server.send_message(client, msg['data'].decode()))
     pubsub.subscribe(**mapping)
     pubsub.run_in_thread(sleep_time=0.001)
 
 
-async def main():
-    async with websockets.serve(producer, port=8080):
-        await asyncio.Future()  # run forever
-
-
-asyncio.run(main())
+server = WebsocketServer(host='0.0.0.0', port=8080)
+server.set_fn_message_received(message_received)
+server.run_forever()
