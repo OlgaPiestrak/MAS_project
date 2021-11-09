@@ -1,0 +1,1 @@
+String.prototype.format||(String.prototype.format=function(){var t=arguments;return this.replace(/{(\d+)}/g,function(r,o){return void 0!==t[o]?t[o]:r})});

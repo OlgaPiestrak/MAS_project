@@ -28,7 +28,7 @@ $(function () {
         				var c = 0;
         				while(true) {
     						var action = '';
-            				if(c == 0) { 
+            				if(c == 0) {
                 				action = entry.action;
             				} else if(c > 0 && ('action_'+c) in entry) {
                 				action = entry['action_'+c];
@@ -50,6 +50,11 @@ $(function () {
         					if(isField) data = $(this).prev().val();
         					else if(c == 0 && 'data' in entry) data = entry.data;
         					else if(c > 0 && ('data_'+c) in entry) data = entry['data_'+c];
+        					
+        					if(data.indexOf('{0}') !== -1) {
+        						var replacement = prompt(data);
+        						data = data.format(replacement);
+        					}
     
         					$.post('command', {id:(username+'-'+devices[type]), cmd:action, data:data});
         					if(isField) $(this).prev().val('');
