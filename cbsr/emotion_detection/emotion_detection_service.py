@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 from cbsr.service import CBSRservice
 from dlib import get_frontal_face_detector
-from imutils import face_utils, resize
+from imutils import face_utils
 # direct import from keras has a bug see: https://stackoverflow.com/a/59810484/3668659
 from tensorflow.python.keras.models import load_model
 
@@ -96,7 +96,7 @@ class EmotionDetectionService(CBSRservice):
                     print('Unknown color space: ' + self.color_space)
                     continue
 
-                frame = resize(np.array(image), width=min(self.image_width, ima.shape[1]))
+                frame = np.array(image)
                 gray_image = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
                 rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGRA2RGB)
 
