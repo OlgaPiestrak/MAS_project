@@ -1,4 +1,5 @@
 <script type="text/javascript">
+var favPage = 'default';
 $(function () {
 	$('#customFile').on('change', function(e) {
 		var files = e.target.files;
@@ -14,11 +15,13 @@ $(function () {
 			favs.off();
 			favs.empty();
 			$.each(config, function(i, entry) {
+				var entryPage = ('page' in entry) ? entry.page : 'default';
+				var entryClass = entryPage + ((entryPage == favPage) ? '' : ' d-none');
 				if(entry.type === 'header') {
-					var header = '<h6 class="w-100 mt-1">'+entry.text+'</h6>';
+					var header = '<h6 class="w-100 mt-1 '+entryClass+'">'+entry.text+'</h6>';
 					favs.append(header);
 				} else if(entry.type === 'button' || entry.type === 'field') {
-					var form = '<form id="fav'+i+'">';
+					var form = '<form id="fav'+i+'" class="'+entryClass+'">';
 					var isField = (entry.type === 'field');
 					if(isField) form += '<input type="text" class="form-control">';
     				var buttonStyle = ('style' in entry) ? entry.style : 'primary';
@@ -62,6 +65,12 @@ $(function () {
         					var shouldLog = ('log' in entry) ? entry.log : true;
         					if(type !== 'logger' && shouldLog && 'logger' in devices)
             					$.post('command', {id:(username+'-'+devices['logger']), cmd:'session_log', data:action+'|'+data});
+        					
+        					if('next' in entry) {
+        						$('.'+favPage).addClass('d-none');
+        						favPage = entry.next;
+        						$('.'+favPage).removeClass('d-none');
+        					}
         					c++;
         				}
 
