@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from cbsr.device import CBSRdevice
+from math import radians
 from qi import Application
 from simplejson import dumps, loads
 from threading import Thread
@@ -97,22 +98,9 @@ class RobotConsumer(CBSRdevice):
             self.motion.setStiffnesses('Leg', 0.8)
             self.produce('TurnStarted')
             self.motion.moveInit()
-            if data == 'left':
-                self.motion.post.moveTo(0.0, 0.0, 1.5, 1.0)
-            else:  # right
-                self.motion.post.moveTo(0.0, 0.0, -1.5, 1.0)
+            self.motion.post.moveTo(0.0, 0.0, radians(int(data)), 0.1)
             self.motion.waitUntilMoveIsFinished()
             self.produce('TurnDone')
-        elif channel == 'action_turn_small':
-            self.motion.setStiffnesses('Leg', 0.8)
-            self.produce('SmallTurnStarted')
-            self.motion.moveInit()
-            if data == 'left':
-                self.motion.post.moveTo(0.0, 0.0, 0.25, 1.0)
-            else:  # right
-                self.motion.post.moveTo(0.0, 0.0, -0.25, 1.0)
-            self.motion.waitUntilMoveIsFinished()
-            self.produce('SmallTurnDone')
         elif channel == 'action_wakeup':
             self.produce('WakeUpStarted')
             self.motion.wakeUp()
@@ -738,8 +726,8 @@ if __name__ == '__main__':
         robot_consumer = RobotConsumer(session=app.session, server=args.server, username=args.username,
                                        password=args.password,
                                        topics=['action_gesture', 'action_eyecolour', 'action_earcolour',
-                                               'action_headcolour', 'action_idle', 'action_turn', 'action_turn_small',
-                                               'action_wakeup', 'action_rest', 'action_set_breathing', 'action_posture',
+                                               'action_headcolour', 'action_idle', 'action_turn', 'action_wakeup',
+                                               'action_rest', 'action_set_breathing', 'action_posture',
                                                'action_stiffness', 'action_play_motion', 'action_record_motion',
                                                'action_motion_file', 'action_led_color', 'action_led_animation'],
                                        profiling=args.profile)
