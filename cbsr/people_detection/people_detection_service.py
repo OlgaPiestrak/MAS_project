@@ -1,10 +1,9 @@
-from io import BytesIO
-from threading import Event, Thread
-
 from PIL import Image
 from cbsr.service import CBSRservice
 from face_recognition import face_locations
+from io import BytesIO
 from numpy import array, frombuffer, ones, uint8, reshape
+from threading import Event, Thread
 
 
 class PeopleDetectionService(CBSRservice):
@@ -88,9 +87,11 @@ class PeopleDetectionService(CBSRservice):
 
                 # Do the actual detection
                 faces = face_locations(array(image))
-                if faces:
-                    print(self.identifier + ': Detected Person!')
-                    self.publish('detected_person', '')
+                for face in faces:  # [top, right, bottom, left]
+                    x = int(face[1] - face[3])
+                    y = int(face[2] - face[0])
+                    print(self.identifier + ': Detected Person at ' + str(x) + ',' + str(y))
+                    self.publish('detected_person', str(x) + ',' + str(y))
             else:
                 self.image_available_flag.wait()
         self.produce_event('PeopleDetectionDone')
