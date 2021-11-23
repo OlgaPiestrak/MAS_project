@@ -1,6 +1,6 @@
 from multiprocessing import Queue
 from threading import Thread
-from time import sleep, time
+from time import sleep
 from timeit import default_timer
 from uuid import getnode
 
@@ -67,7 +67,8 @@ class CBSRdevice(object):
         user = 'user:' + self.username
         device = self.device + ':' + device_type
         while self.running:
-            self.redis.zadd(user, {device: time()})
+            time = self.redis.time()
+            self.redis.zadd(user, {device: time[0]})
             sleep(59.9)
 
     def publish(self, channel, value):

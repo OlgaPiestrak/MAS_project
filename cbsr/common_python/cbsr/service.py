@@ -1,5 +1,5 @@
 from threading import Thread
-from time import gmtime, mktime, sleep
+from time import sleep
 
 
 class CBSRservice(object):
@@ -46,11 +46,14 @@ class CBSRservice(object):
         while True:
             try:
                 pipe = self.redis.pipeline()
+                pipe.time()
                 for device in devices:
                     pipe.zscore(user, device)
+                results = pipe.execute()
+
+                one_minute = results.pop(0)[0] - 60
                 found_one = False
-                one_minute = mktime(gmtime()) - 60
-                for score in pipe.execute():
+                for score in results:
                     if score >= one_minute:
                         found_one = True
                         break
