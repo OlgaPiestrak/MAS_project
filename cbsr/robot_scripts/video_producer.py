@@ -104,7 +104,7 @@ class VideoProcessingModule(CBSRdevice):
         # start a loop until the stop signal is received
         while self.is_robot_watching:
             get_remote_start = self.profiling_start()
-            nao_image = self.video_service.getDirectRawImageRemote(subscriber_id)
+            nao_image = self.video_service.getImageRemote(subscriber_id)
             if nao_image is not None:
                 unix_time_millis = int((datetime.utcnow() - self.epoch).total_seconds() * 1000.0)
                 self.profiling_end('GET_REMOTE', get_remote_start)
