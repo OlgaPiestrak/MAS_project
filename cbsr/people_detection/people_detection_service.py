@@ -88,8 +88,8 @@ class PeopleDetectionService(CBSRservice):
                 # Do the actual detection
                 faces = face_locations(array(image))
                 for face in faces:  # [top, right, bottom, left]
-                    x = int(face[1] - face[3])
-                    y = int(face[2] - face[0])
+                    x = int((face[1] + face[3]) / 2)
+                    y = int((face[2] + face[0]) / 2)
                     print(self.identifier + ': Detected Person at ' + str(x) + ',' + str(y))
                     self.publish('detected_person', str(x) + ',' + str(y))
             else:
