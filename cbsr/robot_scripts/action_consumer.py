@@ -98,7 +98,7 @@ class RobotConsumer(CBSRdevice):
             self.motion.setStiffnesses('Leg', 0.8)
             self.produce('TurnStarted')
             self.motion.moveInit()
-            self.motion.post.moveTo(0.0, 0.0, radians(int(data)), 0.1)
+            self.motion.moveTo(0.0, 0.0, radians(int(data)), 0.1)
             self.motion.waitUntilMoveIsFinished()
             self.produce('TurnDone')
         elif channel == 'action_wakeup':
