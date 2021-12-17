@@ -11,6 +11,7 @@ class SoundProcessingModule(CBSRdevice):
         self.audio_service = session.service('ALAudioDevice')
         self.module_name = name
         self.channel_index = 3  # front microphone
+        self.no_channels = 1
         self.sample_rate = 16000
         self.audio_channel = 'audio_stream'
         self.index = -1
@@ -53,11 +54,13 @@ class SoundProcessingModule(CBSRdevice):
         if result[1] == '4':
             print('Using 48kHz on 4 channels...')
             self.channel_index = 0  # all microphones
+            self.no_channels = 1
             self.sample_rate = 48000
             self.audio_channel = 'audio_stream_multi'
         else:
             print('Using 16kHz on 1 channel...')
             self.channel_index = 3  # front microphone
+            self.no_channels = 1
             self.sample_rate = 16000
             self.audio_channel = 'audio_stream'
 
@@ -66,7 +69,7 @@ class SoundProcessingModule(CBSRdevice):
         self.audio_service.subscribe(self.module_name)
 
         print('Subscribed, listening...')
-        self.produce('ListeningStarted')
+        self.produce('ListeningStarted;' + self.no_channels + ';' + self.sample_rate)
 
         # listen for N seconds (if not 0 i.e. infinite)
         if seconds > 0:
