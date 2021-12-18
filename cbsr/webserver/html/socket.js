@@ -85,9 +85,8 @@ function activateButtons() {
 function chatBox() {
 	const chatBox = $('.chatbox');
 	chatBox.html('<form><input id="chatbox-input" type="text" autofocus class="w-25"><input type="submit"></form>');
-	const chatBoxInput = $("#chatbox-input");
+	const chatBoxInput = $('#chatbox-input');
 	chatBoxInput.focus();
-
 	chatBox.submit(function(e) {
 		const text = chatBoxInput.val();
 		socket.send('action_chat|'+text);
@@ -132,7 +131,7 @@ function playTTS(text) {
 	if( ttsEl ) stopTTS();
 	if( text ) {
 		ttsEl = $('<audio></audio>');
-		ttsEl.attr('src', ttsUrl+text);
+		ttsEl.attr('src', ttsUrl+encodeURIComponent(text));
 		ttsEl.appendTo('body');
 		ttsEl.on('ended', function(){socket.send('events|TextDone')});
    		ttsEl[0].play();
@@ -180,8 +179,8 @@ function updateMicrophone(input) {
 			recorder.connect(audioContext.destination);
 			socket.send('events|ListeningStarted;1;'+sampleRate);
 			if( input > 0 ) setTimeout(function(){updateMicrophone(-1)}, input*1000);
-	   }, function(error){
-	       alert('Error capturing audio.');
+	   }, function(error) {
+	       alert(error);
 	   });
 	} else if( input < 0 && audioStream ) {
 		audioStream.getTracks().forEach(track => track.stop());

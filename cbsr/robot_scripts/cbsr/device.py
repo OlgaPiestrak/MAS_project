@@ -70,6 +70,8 @@ class CBSRdevice(object):
             time = self.redis.time()
             self.redis.zadd(user, {device: time[0]})
             sleep(59.9)
+        self.redis.zrem(user, device)
+        self.redis.close()
 
     def publish(self, channel, value):
         self.redis.publish(self.get_full_channel(channel), value)
@@ -95,11 +97,6 @@ class CBSRdevice(object):
         self.running = False
         if self.profiler_queue:
             self.profiler_queue.put_nowait('END;')
-        print('Trying to exit gracefully...')
-        try:
-            if self.pubsub_thread:
-                self.pubsub_thread.stop()
-            self.redis.close()
-            print('Graceful exit was successful')
-        except Exception as exc:
-            print('Graceful exit has failed: ' + exc.message)
+        if self.pubsub_thread:
+            self.pubsub_thread.stop()
+        print('Shutdown successfully')
