@@ -40,7 +40,7 @@ $(window).on('load', function() {
 		}
 	};
 	socket.onerror = function(err) {
-		if( error.message ) alert(err.message);
+		if( err.message ) alert(err.message);
 	};
 	socket.onclose = function() {
 		mainBody.html('Disconnected');
