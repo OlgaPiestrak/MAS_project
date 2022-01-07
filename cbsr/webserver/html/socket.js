@@ -7,8 +7,8 @@ $(window).on('load', function() {
 	socket.onopen = function() {
 		mainBody.html('Connected! ' + id);
 	};
-	socket.onmessage = function(event) {
-		const data = JSON.parse(event.data);
+	socket.onmessage = function(evt) {
+		const data = JSON.parse(evt.data);
 		if( data.chan == 'render_html' ) {
 			mainBody.html(data.msg);
 			updateListeningIcon('ListeningDone');
@@ -29,13 +29,18 @@ $(window).on('load', function() {
 			playTTS(data.msg);
 		} else if( data.chan == 'action_stop_talking' ) {
 			stopTTS();
+		} else if( data.chan == 'action_play_audio' ) {
+			// TODO
+		} else if( data.chan == 'action_load_audio' ) {
+			// TODO
+		} else if( data.chan == 'action_clear_loaded_audio' ) {
+			// TODO
 		} else {
 			alert(data.chan + ': ' + data.msg);
 		}
 	};
-	socket.onerror = function(error) {
-		if( error.message ) alert(error.message);
-		else alert(error);
+	socket.onerror = function(err) {
+		if( error.message ) alert(err.message);
 	};
 	socket.onclose = function() {
 		mainBody.html('Disconnected');
@@ -46,7 +51,6 @@ $(window).on('load', function() {
 $(window).on('unload', function() {
 	if( socket ) socket.close();
 });
-
 const iconStyle = 'style="height:10vh"';
 function updateListeningIcon(input) {
 	if( input.startsWith('ListeningStarted') ) {
@@ -63,7 +67,7 @@ function vuLogo() {
 	$('.vu_logo').html('<img src="img/vu_logo.png" '+iconStyle+'>');
 }
 function englishFlag() {
-	var englishFlag = $('.english_flag');
+	const englishFlag = $('.english_flag');
 	englishFlag.html('<img src="img/english_flag.png" '+iconStyle+'>');
 	englishFlag.click(function() {
 		socket.send('audio_language|en-US');
@@ -117,7 +121,7 @@ function activateSorting() {
 	});
 }
 let ttsEl = null, ttsUrl = null, langSet = false;
-function setTTS(lang) {	
+function setTTS(lang) {
 	ttsUrl = '//translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl='+lang+'&q=';
 	langSet = true;
 }
@@ -127,7 +131,7 @@ function playTTS(text) {
 		socket.send('events|LanguageChanged');
 		langSet = false;
 	}
-	
+
 	if( ttsEl ) stopTTS();
 	if( text ) {
 		ttsEl = $('<audio></audio>');
@@ -143,15 +147,14 @@ function stopTTS() {
 	if( ttsEl ) {
 		ttsEl.remove();
 		ttsEl = null;
-		socket.send('events|TextDone');
 	}
 }
-function updateMicrophone(input) {	
+function updateMicrophone(input) {
 	if( input >= 0 ) {
 		if( !$('.audioEnabled').length ) return;
 		if( audioStream ) updateMicrophone(-1);
 		audioStream = true;
-		navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia; 
+		navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
 		navigator.getUserMedia({audio: true}, function(stream) {
 			audioStream = stream;
 	    	const context = window.AudioContext || window.webkitAudioContext;
@@ -160,20 +163,18 @@ function updateMicrophone(input) {
 			const volume = audioContext.createGain();
 			const audioInput = audioContext.createMediaStreamSource(audioStream);
 			audioInput.connect(volume);
-			const processor = audioContext.createScriptProcessor || audioContext.createJavaScriptNode; 
+			const processor = audioContext.createScriptProcessor || audioContext.createJavaScriptNode;
 			const recorder = processor.call(audioContext, 2048, 1, 1);
 			recorder.onaudioprocess = function(event) {
 	   			const PCM32fSamples = event.inputBuffer.getChannelData(0);
 				const PCM16iSamples = new ArrayBuffer(PCM32fSamples.length*2);
 				const dataView = new DataView(PCM16iSamples);
 				for (let i = 0; i < PCM32fSamples.length; i++) {
-	   				let val = Math.floor(32767 * PCM32fSamples[i]);
-	   				val = Math.min(32767, val);
-	   				val = Math.max(-32768, val);
-	   				dataView.setInt16(i*2, val, true);
+	   				const intVal = Math.max(-32768, Math.min(32767, Math.floor(32767 * PCM32fSamples[i])));
+	   				dataView.setInt16(i*2, intVal, true);
 				}
 				socket.send(PCM16iSamples);
-				if( !audioStream ) recorder.disconnect(); 
+				if( !audioStream ) recorder.disconnect();
 			};
 			volume.connect(recorder);
 			recorder.connect(audioContext.destination);
