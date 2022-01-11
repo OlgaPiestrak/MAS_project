@@ -1,4 +1,4 @@
-let socket = null, audioStream = null;
+let socket = null, audioStream = null, audioCache = [];
 $(window).on('load', function() {
 	const mainBody = $('#main');
 	mainBody.html('Connecting to server...');
@@ -30,11 +30,13 @@ $(window).on('load', function() {
 		} else if( data.chan == 'action_stop_talking' ) {
 			stopTTS();
 		} else if( data.chan == 'action_play_audio' ) {
-			// TODO
+			playAudio(data.msg);
 		} else if( data.chan == 'action_load_audio' ) {
-			// TODO
+			loadAudio(data.msg);
 		} else if( data.chan == 'action_clear_loaded_audio' ) {
-			// TODO
+			clearLoadedAudio();
+		} else if( data.chan == 'action_speech_param') {
+			if( $('.audioEnabled').length ) socket.send('events|SetSpeechParamDone');
 		} else {
 			alert(data.chan + ': ' + data.msg);
 		}
@@ -131,7 +133,6 @@ function playTTS(text) {
 		socket.send('events|LanguageChanged');
 		langSet = false;
 	}
-
 	if( ttsEl ) stopTTS();
 	if( text ) {
 		ttsEl = $('<audio></audio>');
@@ -148,6 +149,40 @@ function stopTTS() {
 		ttsEl.remove();
 		ttsEl = null;
 	}
+}
+function loadAudio(bytes) {
+	if( !$('.audioEnabled').length ) return;
+	socket.send('events|LoadAudioStarted');
+	audioCache.push(atob(bytes));
+	socket.send('robot_audio_loaded|' + (audioCache.length-1));
+	socket.send('events|LoadAudioDone');	
+}
+function clearLoadedAudio() {
+	if( !$('.audioEnabled').length ) return;
+	socket.send('events|ClearAudioStarted');				
+	audioCache = [];
+	socket.send('events|ClearAudioDone');
+}
+function playAudio(bytesOrIndex) {
+	if( !$('.audioEnabled').length ) return;
+	const audioIndex = parseFloat(bytesOrIndex);
+	if( isNaN(audioIndex) ) bytesOrIndex = atob(bytesOrIndex);
+	else bytesOrIndex = audioCache[bytesOrIndex];
+	const context = window.AudioContext || window.webkitAudioContext;
+	const audioContext = new context();
+	const arrayBuffer = new ArrayBuffer(bytesOrIndex.length);
+    const bufferView = new Uint8Array(arrayBuffer);
+    for(let i = 0; i < bytesOrIndex.length; i++) {
+    	bufferView[i] = bytesOrIndex.charCodeAt(i);
+    }
+    audioContext.decodeAudioData(arrayBuffer, function(buffer) {
+        const audioSource = audioContext.createBufferSource();
+    	audioSource.buffer = buffer;
+    	audioSource.connect(audioContext.destination);
+    	audioSource.onended = function(){socket.send('events|PlayAudioDone')};
+    	audioSource.start(0);
+		socket.send('events|PlayAudioStarted');
+    });
 }
 function updateMicrophone(input) {
 	if( input >= 0 ) {
