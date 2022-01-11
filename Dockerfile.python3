@@ -1,8 +1,10 @@
-FROM python:3.9.8
+FROM python:3.9.9
 
 RUN apt-get update && apt-get install -y ffmpeg libsm6 libxext6 zbar-tools && apt-get clean && rm -rf /tmp/* /var/tmp/*
 
-RUN pip install --no-cache-dir --upgrade --prefer-binary redis~=4.0 hiredis~=2.0 simplejson~=3.17 opencv-python-headless~=4.5 Pillow~=8.4 numpy~=1.21 scipy~=1.7 pyroomacoustics~=0.5 Cython~=0.29 pybind11~=2.8 coronacheck-tools~=5.0 nltk~=3.6
+RUN python -m pip install --upgrade pip
+RUN pip install --no-cache-dir --upgrade --prefer-binary redis~=4.1 hiredis~=2.0 simplejson~=3.17 Pillow~=9.0 numpy~=1.22 scipy~=1.7 pyroomacoustics~=0.6 Cython~=0.29 pybind11~=2.9 coronacheck-tools~=5.0 nltk~=3.6
+RUN pip uninstall --yes opencv-python && pip install --no-cache-dir --upgrade --prefer-binary opencv-python-headless~=4.5
 
 COPY cbsr/common_python /tmp
 RUN cd /tmp && python setup.py install && rm -rf *
